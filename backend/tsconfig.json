@@ -1,21 +1,23 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    "module": "nodenext", // Utilise les modules ESM natifs de Node.js
+    "moduleResolution": "nodenext", // Résolution des modules comme Node.js
+    "target": "esnext", // Génère du code moderne compatible avec Node.js récent
+    "declaration": true, // Génère des fichiers .d.ts pour les types
+    "removeComments": true, // Supprime les commentaires dans le code généré
+    "emitDecoratorMetadata": true, // Nécessaire pour les décorateurs NestJS
+    "experimentalDecorators": true, // Active les décorateurs pour NestJS
+    "strict": true, // Active toutes les vérifications strictes de TypeScript
+    "esModuleInterop": true, // Permet l'interopérabilité avec CommonJS
+    "allowSyntheticDefaultImports": true, // Permet les imports par défaut synthétiques
+    "skipLibCheck": true, // Ignore les vérifications des types des dépendances
+    "outDir": "./dist", // Répertoire de sortie pour le code compilé
+    "sourceMap": true, // Génère des fichiers source map pour le débogage
+    "baseUrl": "./", // Définit la racine pour les chemins relatifs
+    "paths": {
+      "*": ["node_modules/*"] // Résout les modules dans node_modules
+    }
+  },
+  "include": ["src/**/*.ts"], // Inclut tous les fichiers TypeScript dans src
+  "exclude": ["node_modules", "dist"] // Exclut les fichiers compilés et les dépendances
 }
