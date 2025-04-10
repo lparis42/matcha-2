@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
-import { insertQuery, selectQuery, updateQuery } from './sql/sql.query.js';
+import { insertQuery, selectQuery, updateQuery } from './db/db.query.js';
 
 @Injectable()
 export class AppService {
