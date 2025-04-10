@@ -40,10 +40,7 @@ CREATE TABLE users_pictures (
 CREATE OR REPLACE FUNCTION create_user_related_entries()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Insérer une entrée dans users_interests
     INSERT INTO users_interests (user_id) VALUES (NEW.id);
-
-    -- Insérer une entrée dans users_pictures
     INSERT INTO users_pictures (user_id) VALUES (NEW.id);
 
     RETURN NEW;
