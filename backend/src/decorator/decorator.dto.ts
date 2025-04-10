@@ -67,7 +67,7 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const nameRegex = Reflect.getMetadata('nameRegex', dto, key);
         if (nameRegex) {
             if (typeof value !== 'string' || !nameRegex.test(value)) {
-                errors.push(`Invalid name format for property "${key}". Only alphanumeric characters and underscores are allowed.`);
+                errors.push(`Invalid name format for property "${key}". Only alphanumeric characters.`);
             }
         }
 
