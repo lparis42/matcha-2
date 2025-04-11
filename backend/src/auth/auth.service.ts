@@ -60,7 +60,8 @@ export class AuthService {
     return 'User signed in successfully!';
   }
 
-  async askResetEmail(email: string): Promise<string> {
+  async askResetEmail(body: any): Promise<string> {
+    const { email } = body;
     // Check if the email exists in the database
     // If the email does not exist, throw a bad request exception
     const selectObject = this.databaseService.selectQuery('users', ['email'], `email = '${email}'`);
@@ -112,17 +113,17 @@ export class AuthService {
   }
 
   async resetEmail(body: any): Promise<string> {
-    const { email, newEmail, code } = body;
-    // Check if the email exists in the database and if the code is valid
-    // If the email or code is invalid, throw a bad request exception
-    const selectObject = this.databaseService.selectQuery('users', ['email'], `email = '${email}' AND code = '${code}'`);
+    const { email, code } = body;
+    // Check if the email exists in the database 
+    // If the email does not exist, throw a bad request exception
+    const selectObject = this.databaseService.selectQuery('users', ['email'], `code = '${code}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
       throw new BadRequestException('Invalid email or code!');
     }
     // Update the user with the new email
     // If the email already exists, throw a conflict exception
-    const updateObject = this.databaseService.updateQuery('users', ['email', 'code'], `email = '${email}'`, [newEmail, null]);
+    const updateObject = this.databaseService.updateQuery('users', ['email', 'code'], `code = '${code}'`, [email, null]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       throw new InternalServerErrorException('Failed to update email!');
