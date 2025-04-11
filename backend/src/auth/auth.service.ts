@@ -122,7 +122,7 @@ export class AuthService {
     }
     // Update the user with the new email
     // If the email already exists, throw a conflict exception
-    const updateObject = this.databaseService.updateQuery('users', ['email'], `email = '${email}'`, [newEmail]);
+    const updateObject = this.databaseService.updateQuery('users', ['email', 'code'], `email = '${email}'`, [newEmail, null]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       throw new InternalServerErrorException('Failed to update email!');
