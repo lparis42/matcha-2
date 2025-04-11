@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Pool } from 'pg';
-import { insertQuery, selectQuery, updateQuery } from '../db/db.query.js';
 import * as bcrypt from 'bcrypt';
+import { DatabaseService } from '../db/db.service.js';
 
 @Injectable()
 export class AuthService {
@@ -9,13 +9,14 @@ export class AuthService {
   constructor(
     @Inject('DATABASE_POOL')
     private readonly pool: InstanceType<typeof Pool>,
+    private readonly databaseService: DatabaseService,
   ) { }
 
   async signUp(body: any): Promise<string> {
     const { email, username, first_name, last_name, password } = body;
     // Check if the user already exists in the database
     // If the user exists, throw a conflict exception
-    const selectObject = selectQuery('users', ['email', 'username'], `email = '${email}' OR username = '${username}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'username'], `email = '${email}' OR username = '${username}'`);
     const selectResult = await this.pool.query(selectObject);
     if (selectResult.rowCount !== 0) {
       throw new ConflictException('User already exists!');
@@ -23,7 +24,7 @@ export class AuthService {
     // Insert the new user into the database
     // If the insert fails, throw an internal server error exception
     const hashPassword = await bcrypt.hash(password, 10);
-    const insertObject = insertQuery('users',
+    const insertObject = this.databaseService.insertQuery('users',
       ['email', 'username', 'first_name', 'last_name', 'password'],
       [email, username, first_name, last_name, hashPassword]
     );
@@ -40,7 +41,7 @@ export class AuthService {
     const { username, password } = body;
     // Check if the user exists in the database
     // If the user does not exist, throw a bad request exception
-    const selectObject = selectQuery('users', ['username', 'password'], `username = '${username}' AND password = '${password}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['username', 'password'], `username = '${username}' AND password = '${password}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
       throw new BadRequestException('Invalid username or password!');
@@ -59,7 +60,7 @@ export class AuthService {
   async askResetEmail(email: string): Promise<string> {
     // Check if the email exists in the database
     // If the email does not exist, throw a bad request exception
-    const selectObject = selectQuery('users', ['email'], `email = '${email}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['email'], `email = '${email}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
       throw new BadRequestException('Email not found!');
@@ -67,7 +68,7 @@ export class AuthService {
     // Update the user with the reset code
     // If the update fails, throw an internal server error exception
     const code = Math.floor(100000 + Math.random() * 900000).toString().padStart(6, '0');
-    const updateObject = updateQuery('users', ['code'], `email = '${email}'`, [code]);
+    const updateObject = this.databaseService.updateQuery('users', ['code'], `email = '${email}'`, [code]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       throw new InternalServerErrorException('Failed to send reset code!');
@@ -84,14 +85,14 @@ export class AuthService {
     const { email, newEmail, code } = body;
     // Check if the email exists in the database and if the code is valid
     // If the email or code is invalid, throw a bad request exception
-    const selectObject = selectQuery('users', ['email'], `email = '${email}' AND code = '${code}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['email'], `email = '${email}' AND code = '${code}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
       throw new BadRequestException('Invalid email or code!');
     }
     // Update the user with the new email
     // If the email already exists, throw a conflict exception
-    const updateObject = updateQuery('users', ['email'], `email = '${email}'`, [newEmail]);
+    const updateObject = this.databaseService.updateQuery('users', ['email'], `email = '${email}'`, [newEmail]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       throw new InternalServerErrorException('Failed to update email!');
@@ -106,7 +107,7 @@ export class AuthService {
     const { email, username, first_name, last_name, picture, fortyTwoId } = user;
     // Check if the user already exists in the database
     // If the user exists, return a success message
-    const selectfortyTwoId = selectQuery('users', ['fortytwo_id'], `fortytwo_id = '${fortyTwoId}'`);
+    const selectfortyTwoId = this.databaseService.selectQuery('users', ['fortytwo_id'], `fortytwo_id = '${fortyTwoId}'`);
     const fortyTwoIdResult = await this.pool.query(selectfortyTwoId);
     if (fortyTwoIdResult.rowCount !== 0) {
       Logger.log(`UserID: ${fortyTwoIdResult.rows[0].id} signed in successfully!`, 'AuthService');
@@ -114,10 +115,10 @@ export class AuthService {
     }
     // Check if the email already exists in the database
     // If the email already exists, update the fortytwo_id field
-    const selectEmail = selectQuery('users', ['email, username'], `email = '${email}' AND username = '${username}'`);
+    const selectEmail = this.databaseService.selectQuery('users', ['email, username'], `email = '${email}' AND username = '${username}'`);
     const emailResult = await this.pool.query(selectEmail);
     if (emailResult.rowCount !== 0) {
-      const updateFortyTwoId = updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortyTwoId]);
+      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortyTwoId]);
       const updateFortyTwoIdResult = await this.pool.query(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
         throw new InternalServerErrorException('Failed to update fortytwo_id!');
@@ -127,14 +128,14 @@ export class AuthService {
     }
     // Check if the username already exists in the database
     // If the username already exists, throw a conflict exception
-    const selectUsername = selectQuery('users', ['username'], `username = '${username}'`);
+    const selectUsername = this.databaseService.selectQuery('users', ['username'], `username = '${username}'`);
     const usernameResult = await this.pool.query(selectUsername);
     if (usernameResult.rowCount !== 0) {
       throw new ConflictException('Username already exists!');
     }
     // Insert the new user into the database
     // If the insert fails, throw an internal server error exception
-    const insertObject = insertQuery('users',
+    const insertObject = this.databaseService.insertQuery('users',
       ['email', 'username', 'first_name', 'last_name', 'picture', 'fortytwo_id'],
       [email, username, first_name, last_name, picture, fortyTwoId]
     );

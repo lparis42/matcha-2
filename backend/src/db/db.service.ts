@@ -5,7 +5,7 @@ import pkg from 'pg';
 const { Pool } = pkg;
 
 @Injectable()
-export class DatabaseInitService implements OnModuleInit {
+export class DatabaseService implements OnModuleInit {
     constructor(
         @Inject('DATABASE_POOL')
         private readonly pool: InstanceType<typeof Pool>
@@ -32,5 +32,26 @@ export class DatabaseInitService implements OnModuleInit {
             RETURNING *;
         `;
         await this.pool.query(createTestUserQuery);
+    }
+
+    selectQuery(table: string, columns: string[], where: string): string {
+        return `SELECT ${columns.join(', ')} FROM ${table} WHERE ${where}`;
+    }
+
+    insertQuery(table: string, columns: string[], values: any[]): { query: string; params: any[] } {
+        const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
+        return { query, params: values };
+    }
+
+    updateQuery(table: string, set: string[], where: string, values: any[]): { query: string; params: any[] } {
+        const setClause = set.map((column, index) => `${column} = $${index + 1}`).join(', ');
+        const query = `UPDATE ${table} SET ${setClause} WHERE ${where}`;
+        return { query, params: values };
+    }
+
+    deleteQuery(table: string, where: string, values: any[]): { query: string; params: any[] } {
+        const query = `DELETE FROM ${table} WHERE ${where}`;
+        return { query, params: values };
     }
 }

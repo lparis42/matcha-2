@@ -1,6 +1,6 @@
 import { Module, Global, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DatabaseInitService } from './db.service.js';
+import { DatabaseService } from './db.service.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 
@@ -21,7 +21,7 @@ const { Pool } = pkg;
                 return pool;
             },
         },
-        DatabaseInitService,
+        DatabaseService,
 
     ],
     exports: ['DATABASE_POOL'], // Exporter DATABASE_POOL pour d'autres modules
