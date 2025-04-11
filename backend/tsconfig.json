@@ -16,7 +16,11 @@
     "baseUrl": "./", // Définit la racine pour les chemins relatifs
     "paths": {
       "*": ["node_modules/*"] // Résout les modules dans node_modules
-    }
+    },
+    "typeRoots": [
+      "./node_modules/@types", // Chemin vers les types globaux
+      "./src/types" // Chemin vers les types personnalisés
+    ]
   },
   "include": ["src/**/*.ts"], // Inclut tous les fichiers TypeScript dans src
   "exclude": ["node_modules", "dist"] // Exclut les fichiers compilés et les dépendances

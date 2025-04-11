@@ -1,4 +1,4 @@
-import { verifyEmail, verifyLength, verifyCode } from '../decorator/decorator.dto.js';
+import { verifyEmail, verifyLength, verifyCode } from '../../decorator/decorator.dto.js';
 
 export class ResetEmailDto {
     @verifyCode()

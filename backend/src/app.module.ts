@@ -1,38 +1,22 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { DatabaseInitService } from './db/db.service.js';
+import { ConfigModule } from '@nestjs/config';
 
 import pkg from 'pg';
+import { AuthModule } from './auth/auth.module.js';
+import { DatabaseModule } from './db/db.module.js';
 const { Pool } = pkg;
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env',
       isGlobal: true,
     }),
+    DatabaseModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    DatabaseInitService,
-    {
-      provide: 'DATABASE_POOL',
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
-        const pool = new Pool({
-          host: configService.get<string>('DB_HOST'),
-          port: configService.get<number>('DB_PORT'),
-          user: configService.get<string>('DB_USERNAME'),
-          password: configService.get<string>('DB_PASSWORD'),
-          database: configService.get<string>('DB_NAME'),
-        });
-        Logger.log('Database connection established successfully!', 'DatabaseModule');
-        return pool;
-      },
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule { }

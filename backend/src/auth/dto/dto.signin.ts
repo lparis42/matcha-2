@@ -1,4 +1,4 @@
-import { verifyLength, verifyPassword, verifyName } from '../decorator/decorator.dto.js';
+import { verifyLength, verifyPassword, verifyName } from '../../decorator/decorator.dto.js';
 
 export class SignInDto {
     @verifyName()
