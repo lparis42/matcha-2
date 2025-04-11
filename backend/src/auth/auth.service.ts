@@ -1,7 +1,9 @@
 import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../db/db.service.js';
+import { ConfigService } from '@nestjs/config/index.js';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +12,7 @@ export class AuthService {
     @Inject('DATABASE_POOL')
     private readonly pool: InstanceType<typeof Pool>,
     private readonly databaseService: DatabaseService,
+    private readonly configService: ConfigService,
   ) { }
 
   async signUp(body: any): Promise<string> {
@@ -73,9 +76,36 @@ export class AuthService {
     if (updateResult.rowCount === 0) {
       throw new InternalServerErrorException('Failed to send reset code!');
     }
-    // todo: send email with the reset code link.
-    // example: https://localhost:5173/reset-email?code=123456
-    
+    // Send the reset link using nodemailer and google OAuth2
+    // If the email fails to send, throw an internal server error exception
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: this.configService.get<string>('GOOGLE_GMAIL_USER'),
+        clientId: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+        clientSecret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+        refreshToken: this.configService.get<string>('GOOGLE_GMAIL_REFRESH_TOKEN'),
+      },
+    });
+    await transporter.sendMail({
+      from: this.configService.get<string>('GMAIL_USER'),
+      to: email,
+      subject: 'Change Email',
+      text: `
+        Hello,
+        You requested to change your email address. Please click the link below to reset your email:
+        https://localhost:5173/reset-email?code=${code}
+        If you did not request this, please ignore this email.
+      `,
+      html: `
+        <h1>Hello,</h1>
+        <p>You requested to change your email address. Please click the link below to reset your email:</p>
+        <a href="https://localhost:5173/reset-email?code=${code}">Reset Email</a>
+        <p>If you did not request this, please ignore this email.</p>
+      `,
+    });
+
     // If the email is successfully sent, return a success message
     Logger.log(`UserID: ${result.rows[0].id} reset code sent successfully!`, 'AuthService');
     return 'Reset code sent to your email address!';
