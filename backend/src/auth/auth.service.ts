@@ -44,16 +44,16 @@ export class AuthService {
     const { username, password } = body;
     // Check if the user exists in the database
     // If the user does not exist, throw a bad request exception
-    const selectObject = this.databaseService.selectQuery('users', ['username', 'password'], `username = '${username}' AND password = '${password}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['username', 'password'], `username = '${username}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      throw new BadRequestException('Invalid username or password!');
+      throw new BadRequestException('Invalid username!');
     }
     // Check if the password is correct
     // If the password is incorrect, throw a bad request exception
     const isPasswordValid = await bcrypt.compare(password, result.rows[0].password);
     if (!isPasswordValid) {
-      throw new BadRequestException('Invalid username or password!');
+      throw new BadRequestException('Invalid password!');
     }
     // If the password is correct, return a success message
     Logger.log(`UserID: ${result.rows[0].id} signed in successfully!`, 'AuthService');
@@ -77,15 +77,15 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to send reset code!');
     }
     // Send the reset link using nodemailer and google OAuth2
-    // If the email fails to send, throw an internal server error exception
+    // If the email fails to send, throw an internal server error excepti
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         type: 'OAuth2',
-        user: this.configService.get<string>('GOOGLE_GMAIL_USER'),
         clientId: this.configService.get<string>('GOOGLE_CLIENT_ID'),
         clientSecret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-        refreshToken: this.configService.get<string>('GOOGLE_GMAIL_REFRESH_TOKEN'),
+        user: this.configService.get<string>('GOOGLE_MAIL_USER'),
+        refreshToken: this.configService.get<string>('GOOGLE_MAIL_REFRESH_TOKEN'),
       },
     });
     await transporter.sendMail({

@@ -36,11 +36,11 @@ export class DatabaseService implements OnModuleInit {
 
     selectQuery(table: string, columns: string[], where: string): string {
         return `SELECT ${columns.join(', ')} FROM ${table} WHERE ${where}`;
-    }
+    } 
 
     insertQuery(table: string, columns: string[], values: any[]): { query: string; params: any[] } {
         const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
+        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
         return { query, params: values };
     }
 

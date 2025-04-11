@@ -1,10 +1,74 @@
-import { useState } from 'react'
+import { use, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  const SignIn = async () => {
+    try {
+      const response = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: 'usertest', password: 'passtestE42' }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+      console.log(data)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const SignUp = async () => {
+    try {
+      const response = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: 'usertest', 
+          password: 'passtestE42',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'lparismemartin@gmail.com'
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+      console.log(data)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const AskResetEmail = async () => {
+    try {
+      const response = await fetch('/api/auth/ask-reset-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'lparismemartin@gmail.com'
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+      console.log(data)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   return (
     <>
@@ -16,18 +80,18 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1>Testing buttons</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+        <button onClick={SignIn}>
+          Sign In
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <button onClick={SignUp}>
+          Sign Up
+        </button>
+        <button onClick={AskResetEmail}>
+          Ask Reset Email
+        </button>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }

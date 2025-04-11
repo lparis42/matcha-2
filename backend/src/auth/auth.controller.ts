@@ -17,29 +17,29 @@ export class AuthController {
     @Post('sign-up')
     signUp(
         @ValidateBody(SignUpDto) body: SignUpDto
-    ): Promise<string> {
-        return this.authService.signUp(body);
+    ): Promise<{ message: string }> {
+        return this.authService.signUp(body).then(result => ({ message: result }));
     }
 
     @Post('sign-in')
     signIn(
         @ValidateBody(SignInDto) body: SignInDto
-    ): Promise<string> {
-        return this.authService.signIn(body);
+    ): Promise<{ message: string }> {
+        return this.authService.signIn(body).then(result => ({ message: result }));
     }
 
     @Post('ask-reset-email')
     askResetEmail(
         @Body('email') email: string
-    ): Promise<string> {
-        return this.authService.askResetEmail(email);
+    ): Promise<{ message: string }> {
+        return this.authService.askResetEmail(email).then(result => ({ message: result }));
     }
 
     @Post('reset-email')
     resetEmail(
         @ValidateBody(ResetEmailDto) body: ResetEmailDto
-    ): Promise<string> {
-        return this.authService.resetEmail(body);
+    ): Promise<{ message: string }> {
+        return this.authService.resetEmail(body).then(result => ({ message: result }));
     }
 
     // Oauth 42 endpoints
@@ -56,7 +56,7 @@ export class AuthController {
     fortyTwoCallback(
         @Req() req: Request,
         @Res() res: Response
-    ): Promise<string> {
+    ): Promise<{ message: string }> {
         const user = req.user as User;
         if (!user) {
             throw new NotFoundException('User not found in the request!');
@@ -69,6 +69,6 @@ export class AuthController {
         });
 
         const profile = user.profile;
-        return this.authService.fortyTwoConnect(profile);
+        return this.authService.fortyTwoConnect(profile).then(result => ({ message: result }));
     }
 }

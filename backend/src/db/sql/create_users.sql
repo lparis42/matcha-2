@@ -9,6 +9,7 @@ CREATE TABLE users (
     gender VARCHAR(255),
     sexual_preferences VARCHAR(255),
     biography VARCHAR(255),
+    code VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

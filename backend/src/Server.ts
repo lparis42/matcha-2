@@ -9,7 +9,7 @@ class Server {
 
     public async bootstrap(): Promise<void> {
         this.app = await NestFactory.create(AppModule, await this.getOptions());
-        this.app.setGlobalPrefix('v1/api');
+        this.app.setGlobalPrefix('api');
         await this.app.listen(this.getHttpsPort(), () => {
             new Logger(Server.name).log(`Server is running on port ${this.getHttpsPort()}`);
         });

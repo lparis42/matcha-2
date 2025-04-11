@@ -15,9 +15,9 @@ export class SignUpDto {
 
     @verifyName()
     @verifyLength(3, 20)
-    firstName!: string;
+    first_name!: string;
 
     @verifyName()
     @verifyLength(3, 20)
-    lastName!: string;
+    last_name!: string;
 }
