@@ -8,14 +8,14 @@ export default defineConfig({
   server: {
     port: 5173,
     https: {
-      key: fs.readFileSync('server.key', 'utf8'),
-      cert: fs.readFileSync('server.crt', 'utf8'),
+      key: fs.readFileSync('https.key', 'utf8'),
+      cert: fs.readFileSync('https.crt', 'utf8'),
 
     },
     proxy: {
       '/api': {
-        target: 'https://localhost:3000', // Adresse du backend avec HTTPS
-        changeOrigin: true,
+        target: 'https://localhost:3000',
+        changeOrigin: true, // Change the origin of the host header to the target URL
         secure: false, // Ignore self-signed certificate validation
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req) => {

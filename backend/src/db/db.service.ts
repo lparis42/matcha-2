@@ -40,7 +40,7 @@ export class DatabaseService implements OnModuleInit {
 
     insertQuery(table: string, columns: string[], values: any[]): { query: string; params: any[] } {
         const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`;
+        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
         return { query, params: values };
     }
 

@@ -19,7 +19,8 @@ export class AuthService {
     const { email, username, first_name, last_name, password } = body;
     // Check if the user already exists in the database
     // If the user exists, throw a conflict exception
-    const selectObject = this.databaseService.selectQuery('users', ['email', 'username'], `email = '${email}' OR username = '${username}'`);
+    const selectObject = this.databaseService.selectQuery('users', 
+      ['email', 'username'], `email = '${email}' OR username = '${username}'`);
     const selectResult = await this.pool.query(selectObject);
     if (selectResult.rowCount !== 0) {
       throw new ConflictException('User already exists!');
@@ -31,12 +32,12 @@ export class AuthService {
       ['email', 'username', 'first_name', 'last_name', 'password'],
       [email, username, first_name, last_name, hashPassword]
     );
-    const insertResult = await this.pool.query(insertObject.query, insertObject.params);
+    const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
     if (!insertResult.rowCount) {
       throw new InternalServerErrorException('Failed to sign up user!');
     }
     // If the user is successfully inserted, return a success message
-    Logger.log(`UserID: ${insertResult.rows[0].id} signed up successfully!`, 'AuthService');
+    Logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`, 'AuthService');
     return 'User signed up successfully!';
   }
 
@@ -44,7 +45,8 @@ export class AuthService {
     const { username, password } = body;
     // Check if the user exists in the database
     // If the user does not exist, throw a bad request exception
-    const selectObject = this.databaseService.selectQuery('users', ['username', 'password'], `username = '${username}'`);
+    const selectObject = this.databaseService.selectQuery('users', 
+      ['id', 'username', 'password'], `username = '${username}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
       throw new BadRequestException('Invalid username!');
@@ -56,7 +58,7 @@ export class AuthService {
       throw new BadRequestException('Invalid password!');
     }
     // If the password is correct, return a success message
-    Logger.log(`UserID: ${result.rows[0].id} signed in successfully!`, 'AuthService');
+    Logger.log(`User '${result.rows[0].id}' signed in successfully!`, 'AuthService');
     return 'User signed in successfully!';
   }
 
@@ -108,7 +110,7 @@ export class AuthService {
     });
 
     // If the email is successfully sent, return a success message
-    Logger.log(`UserID: ${result.rows[0].id} reset code sent successfully!`, 'AuthService');
+    Logger.log(`User '${result.rows[0].id}' reset code sent successfully!`, 'AuthService');
     return 'Reset code sent to your email address!';
   }
 
@@ -129,7 +131,7 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to update email!');
     }
     // If the email is successfully updated, return a success message
-    Logger.log(`UserID: ${result.rows[0].id} email updated successfully!`, 'AuthService');
+    Logger.log(`User '${result.rows[0].id}' email updated successfully!`, 'AuthService');
     return 'Email updated successfully!';
   }
 
@@ -141,7 +143,7 @@ export class AuthService {
     const selectfortyTwoId = this.databaseService.selectQuery('users', ['fortytwo_id'], `fortytwo_id = '${fortyTwoId}'`);
     const fortyTwoIdResult = await this.pool.query(selectfortyTwoId);
     if (fortyTwoIdResult.rowCount !== 0) {
-      Logger.log(`UserID: ${fortyTwoIdResult.rows[0].id} signed in successfully!`, 'AuthService');
+      Logger.log(`User '${fortyTwoIdResult.rows[0].id}' signed in successfully!`, 'AuthService');
       return 'User signed in successfully!';
     }
     // Check if the email already exists in the database
@@ -154,7 +156,7 @@ export class AuthService {
       if (updateFortyTwoIdResult.rowCount === 0) {
         throw new InternalServerErrorException('Failed to update fortytwo_id!');
       }
-      Logger.log(`UserID: ${emailResult.rows[0].id} signed in successfully!`, 'AuthService');
+      Logger.log(`User '${emailResult.rows[0].id}' signed in successfully!`, 'AuthService');
       return 'User signed in successfully!';
     }
     // Check if the username already exists in the database
@@ -175,7 +177,7 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to sign up user!');
     }
     // If the user is successfully inserted, return a success message
-    Logger.log(`UserID: ${insertResult.rows[0].id} signed up successfully!`, 'AuthService');
+    Logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`, 'AuthService');
     return 'User signed up successfully!';
   }
 }

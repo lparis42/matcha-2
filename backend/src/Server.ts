@@ -16,8 +16,8 @@ class Server {
     }
 
     private async getOptions(): Promise<NestApplicationOptions> {
-        const key = fs.readFileSync('server.key');
-        const cert = fs.readFileSync('server.crt');
+        const key = fs.readFileSync('https.key');
+        const cert = fs.readFileSync('https.crt');
         const options = {
             httpsOptions: { key, cert },
             // bodyParser: false,
