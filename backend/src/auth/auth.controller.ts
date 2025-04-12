@@ -7,6 +7,7 @@ import { ResetEmailDto } from './dto/dto.resetemail.js';
 import { AuthGuard } from '@nestjs/passport/index.js';
 import { Request, Response } from 'express';
 import { User } from '../interfaces/interface.user.js';
+import { AskResetEmailDto } from './dto/dto.askresetemail.js';
 
 @Controller('auth')
 export class AuthController {
@@ -30,9 +31,9 @@ export class AuthController {
 
     @Post('ask-reset-email')
     askResetEmail(
-        @Body('email') email: string
+        @ValidateBody(AskResetEmailDto) body: AskResetEmailDto
     ): Promise<{ message: string }> {
-        return this.authService.askResetEmail(email).then(result => ({ message: result }));
+        return this.authService.askResetEmail(body).then(result => ({ message: result }));
     }
 
     @Post('reset-email')
