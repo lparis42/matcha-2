@@ -17,7 +17,6 @@ createRoot(document.getElementById('root')!).render(
         </main>
 
         <footer className='position-fixed w-100 bottom-0 right-0'>
-          &copy; 2025 Forge & Duel. All rights reserved.
         </footer>
       </>
     </BrowserRouter>
