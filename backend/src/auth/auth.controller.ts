@@ -70,8 +70,7 @@ export class AuthController {
     async fortyTwoCallback(
         @Req() req: Request,
     ): Promise<{ message: string }> {
-        const profile = req.user!.profile;
-        const result = await this.authService.fortyTwoConnect(profile);
+        const result = await this.authService.fortyTwoConnect(req.user!);
         return result;
     }
 }

@@ -32,14 +32,12 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
 
   async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
     return {
-      profile: {
-        fortytwo_id: profile.id,
-        email: profile.email,
-        username: profile.login,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        picture: profile.image?.link,
-      },
+      fortytwo_id: profile.id,
+      email: profile.email,
+      username: profile.login,
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      picture: profile.image?.link,
     };
   }
 }

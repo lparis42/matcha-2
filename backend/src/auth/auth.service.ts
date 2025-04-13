@@ -141,8 +141,8 @@ export class AuthService {
     return { message: 'Email updated successfully!' };
   }
 
-  async fortyTwoConnect(user: UserData["profile"]): Promise<{ userId: number, message: string }> {
-    const { fortytwo_id, email, username, first_name, last_name, picture } = user!;
+  async fortyTwoConnect(user: UserData): Promise<{ userId: number, message: string }> {
+    const { fortytwo_id, email, username, first_name, last_name, picture } = user;
     // Check if the user already exists in the database
     // If the user exists, return a success message
     const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], `fortytwo_id = '${fortytwo_id}'`);
