@@ -12,4 +12,4 @@ import { DatabaseService } from '../db/db.service.js';
   providers: [AuthService, FortyTwoStrategy, DatabaseService],
   controllers: [AuthController],
 })
-export class AuthModule {}
+export class AuthModule { }

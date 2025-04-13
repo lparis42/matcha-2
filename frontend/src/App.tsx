@@ -1,4 +1,4 @@
-import { use, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -70,6 +70,36 @@ function App() {
     }
   }
 
+  const Oauth42 = () => {
+    window.location.href = '/api/auth/42';
+  }
+  
+  const hasFetched = useRef(false);
+
+  useEffect(() => {
+
+    const autoSignIn = async () => {
+      if (hasFetched.current) return;
+      hasFetched.current = true;
+
+      try {
+        const response = await fetch('/api/auth/auto-sign-in', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message);
+        }
+        console.log(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    autoSignIn();
+  }, []);
+
   return (
     <>
       <div>
@@ -90,6 +120,9 @@ function App() {
         </button>
         <button onClick={AskResetEmail}>
           Ask Reset Email
+        </button>
+        <button onClick={Oauth42}>
+          Oauth 42
         </button>
       </div>
     </>

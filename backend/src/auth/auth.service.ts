@@ -4,6 +4,11 @@ import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../db/db.service.js';
 import { ConfigService } from '@nestjs/config/index.js';
+import { SignInDto } from './dto/dto.signin.js';
+import { SignUpDto } from './dto/dto.signup.js';
+import { AskResetEmailDto } from './dto/dto.askresetemail.js';
+import { ResetEmailDto } from './dto/dto.resetemail.js';
+import { UserData } from '../interfaces/interface.userdata.js';
 
 @Injectable()
 export class AuthService {
@@ -15,11 +20,11 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) { }
 
-  async signUp(body: any): Promise<string> {
+  async signUp(body: SignUpDto): Promise<{ message: string }> {
     const { email, username, first_name, last_name, password } = body;
     // Check if the user already exists in the database
     // If the user exists, throw a conflict exception
-    const selectObject = this.databaseService.selectQuery('users', 
+    const selectObject = this.databaseService.selectQuery('users',
       ['email', 'username'], `email = '${email}' OR username = '${username}'`);
     const selectResult = await this.pool.query(selectObject);
     if (selectResult.rowCount !== 0) {
@@ -38,14 +43,14 @@ export class AuthService {
     }
     // If the user is successfully inserted, return a success message
     Logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`, 'AuthService');
-    return 'User signed up successfully!';
+    return { message: 'User signed up successfully!' };
   }
 
-  async signIn(body: any): Promise<string> {
+  async signIn(body: SignInDto): Promise<{ userId: number, message: string }> {
     const { username, password } = body;
     // Check if the user exists in the database
     // If the user does not exist, throw a bad request exception
-    const selectObject = this.databaseService.selectQuery('users', 
+    const selectObject = this.databaseService.selectQuery('users',
       ['id', 'username', 'password'], `username = '${username}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
@@ -58,11 +63,12 @@ export class AuthService {
       throw new BadRequestException('Invalid password!');
     }
     // If the password is correct, return a success message
-    Logger.log(`User '${result.rows[0].id}' signed in successfully!`, 'AuthService');
-    return 'User signed in successfully!';
+    const userId = result.rows[0].id;
+    Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+    return { userId, message: 'User signed in successfully!' };
   }
 
-  async askResetEmail(body: any): Promise<string> {
+  async askResetEmail(body: AskResetEmailDto): Promise<{ message: string }> {
     const { email } = body;
     // Check if the email exists in the database
     // If the email does not exist, throw a bad request exception
@@ -111,10 +117,10 @@ export class AuthService {
 
     // If the email is successfully sent, return a success message
     Logger.log(`User '${result.rows[0].id}' reset code sent successfully!`, 'AuthService');
-    return 'Reset code sent to your email address!';
+    return { message: 'Reset code sent successfully!' };
   }
 
-  async resetEmail(body: any): Promise<string> {
+  async resetEmail(body: ResetEmailDto): Promise<{ message: string }> {
     const { email, code } = body;
     // Check if the email exists in the database 
     // If the email does not exist, throw a bad request exception
@@ -132,32 +138,33 @@ export class AuthService {
     }
     // If the email is successfully updated, return a success message
     Logger.log(`User '${result.rows[0].id}' email updated successfully!`, 'AuthService');
-    return 'Email updated successfully!';
+    return { message: 'Email updated successfully!' };
   }
 
-
-  async fortyTwoConnect(user: any): Promise<string> {
-    const { email, username, first_name, last_name, picture, fortyTwoId } = user;
+  async fortyTwoConnect(user: UserData["profile"]): Promise<{ userId: number, message: string }> {
+    const { fortytwo_id, email, username, first_name, last_name, picture } = user!;
     // Check if the user already exists in the database
     // If the user exists, return a success message
-    const selectfortyTwoId = this.databaseService.selectQuery('users', ['fortytwo_id'], `fortytwo_id = '${fortyTwoId}'`);
+    const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], `fortytwo_id = '${fortytwo_id}'`);
     const fortyTwoIdResult = await this.pool.query(selectfortyTwoId);
     if (fortyTwoIdResult.rowCount !== 0) {
-      Logger.log(`User '${fortyTwoIdResult.rows[0].id}' signed in successfully!`, 'AuthService');
-      return 'User signed in successfully!';
+      const userId = fortyTwoIdResult.rows[0].id;
+      Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+      return { userId: userId, message: 'User signed in successfully!' };
     }
     // Check if the email already exists in the database
     // If the email already exists, update the fortytwo_id field
     const selectEmail = this.databaseService.selectQuery('users', ['email, username'], `email = '${email}' AND username = '${username}'`);
     const emailResult = await this.pool.query(selectEmail);
     if (emailResult.rowCount !== 0) {
-      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortyTwoId]);
+      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortytwo_id]);
       const updateFortyTwoIdResult = await this.pool.query(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
         throw new InternalServerErrorException('Failed to update fortytwo_id!');
       }
-      Logger.log(`User '${emailResult.rows[0].id}' signed in successfully!`, 'AuthService');
-      return 'User signed in successfully!';
+      const userId = emailResult.rows[0].id;
+      Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+      return { userId: userId, message: 'User signed in successfully!' };
     }
     // Check if the username already exists in the database
     // If the username already exists, throw a conflict exception
@@ -168,16 +175,25 @@ export class AuthService {
     }
     // Insert the new user into the database
     // If the insert fails, throw an internal server error exception
-    const insertObject = this.databaseService.insertQuery('users',
-      ['email', 'username', 'first_name', 'last_name', 'picture', 'fortytwo_id'],
-      [email, username, first_name, last_name, picture, fortyTwoId]
+    await this.pool.query('BEGIN');
+    const insertObject = this.databaseService.insertQuery(
+      'users',
+      ['email', 'username', 'first_name', 'last_name', 'fortytwo_id'],
+      [email, username, first_name, last_name, fortytwo_id]
     );
-    const insertResult = await this.pool.query(insertObject.query, insertObject.params);
-    if (!insertResult.rowCount) {
+    const insertResult = await this.pool.query(insertObject.query + ' RETURNING id', insertObject.params);
+    const userId = insertResult.rows[0].id;
+    const insertPicture = this.databaseService.updateQuery(
+      'users_pictures', ['picture_1'], `user_id = ${userId}`, [picture]
+    );
+    const insertPictureResult = await this.pool.query(insertPicture.query, insertPicture.params);
+    if (!insertResult.rowCount || !insertPictureResult.rowCount) {
+      await this.pool.query('ROLLBACK');
       throw new InternalServerErrorException('Failed to sign up user!');
     }
+    await this.pool.query('COMMIT');
     // If the user is successfully inserted, return a success message
-    Logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`, 'AuthService');
-    return 'User signed up successfully!';
+    Logger.log(`User '${userId}' signed up successfully!`, 'AuthService');
+    return { userId, message: 'User signed up successfully!' };
   }
 }

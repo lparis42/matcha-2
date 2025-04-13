@@ -1,9 +1,9 @@
-import { User } from '../interfaces/interface.user.js';
+import { UserData } from '../interfaces/interface.userdata.ts';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: User;
+            user?: UserData;
         }
     }
 }

@@ -1,8 +1,8 @@
-export interface User {
-    accessToken: string;
-    refreshToken: string;
-    profile: {
-        id: number;
+export interface UserData {
+    id?: number;
+    access_token?: string;
+    profile?: {
+        fortytwo_id: number;
         username?: string;
         email: string;
         first_name?: string;
