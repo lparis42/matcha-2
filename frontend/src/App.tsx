@@ -6,6 +6,8 @@ import { io } from 'socket.io-client';
 
 function App() {
 
+  const [isConnecting, setIsConnecting] = useState(false);
+
   const SignIn = async () => {
     try {
       const response = await fetch('/api/auth/sign-in', {
@@ -20,22 +22,7 @@ function App() {
         throw new Error(data.message);
       }
       console.log(data)
-      const socket = io('/', {
-        transports: ['websocket'],
-        autoConnect: false,
-        withCredentials: true,
-      });
-      socket.on('connect', () => {
-        console.log('Connected to WebSocket server');
-
-        socket.on('disconnect', () => {
-          console.log('Disconnected from WebSocket server');
-        });
-      });
-      socket.on('connect_error', (err) => {
-        console.error('Connection error:', err);
-      });
-      socket.connect();
+      setIsConnecting(true);
     } catch (error) {
       console.error(error)
     }
@@ -96,27 +83,21 @@ function App() {
   useEffect(() => {
 
     const autoSignIn = async () => {
-      if (hasFetched.current) return;
+      if (hasFetched.current && !isConnecting) return;
       hasFetched.current = true;
 
       try {
-        const response = await fetch('/api/auth/auto-sign-in', {
-          method: 'POST',
-          credentials: 'include',
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message);
-        }
-        console.log(data);
         const socket = io('/', {
           transports: ['websocket'],
-          autoConnect: false,
+          autoConnect: true,
           withCredentials: true,
         });
+
         socket.on('connect', () => {
           console.log('Connected to WebSocket server');
-  
+          socket.on('message', (data) => {
+            console.log('Received message:', data);
+          });
           socket.on('disconnect', () => {
             console.log('Disconnected from WebSocket server');
           });
@@ -124,14 +105,13 @@ function App() {
         socket.on('connect_error', (err) => {
           console.error('Connection error:', err);
         });
-        socket.connect();
       } catch (error) {
         console.error(error);
       }
     };
 
     autoSignIn();
-  }, []);
+  }, [isConnecting]);
 
   return (
     <>

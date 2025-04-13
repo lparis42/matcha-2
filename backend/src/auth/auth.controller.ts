@@ -16,13 +16,14 @@ export class AuthController {
         private readonly authService: AuthService,
     ) { }
 
-    @Post('auto-sign-in')
-    @UseGuards(CookieAuthGuard)
-    async autoSignIn(
-        @Req() req: Request,
-    ): Promise<{ userId: number, message: string }> {
-        return { userId: req.user!.id!, message: 'User signed in successfully!' };
-    }
+    // Auto sign-in endpoint for testing purposes
+    // @Post('auto-sign-in')
+    // @UseGuards(CookieAuthGuard)
+    // async autoSignIn(
+    //     @Req() req: Request,
+    // ): Promise<{ userId: number, message: string }> {
+    //     return { userId: req.user!.id!, message: 'User signed in successfully!' };
+    // }
 
     @Post('sign-up')
     async signUp(
