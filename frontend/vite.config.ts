@@ -13,6 +13,29 @@ export default defineConfig({
 
     },
     proxy: {
+      '/socket.io': {
+        target: 'https://localhost:3000', // URL de votre backend
+        ws: true, // Active la prise en charge des WebSockets
+        changeOrigin: true,
+        secure: false, // Ignore la validation du certificat auto-signé
+        configure: (proxy, options) => {
+          proxy.on('proxyReqWs', (proxyReq: any, req: any, socket: any, head: any) => {
+            console.log('Proxying WebSocket request:', req.url);
+          });
+          proxy.on('proxyRes', (proxyRes: any) => {
+            console.log('Received response from target:', proxyRes.statusCode);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('WebSocket proxy error:', err);
+          });
+          proxy.on('open', () => {
+            console.log('WebSocket connection established');
+          });
+          proxy.on('close', () => {
+            console.log('WebSocket connection closed');
+          });
+        }
+      },
       '/api': {
         target: 'https://localhost:3000',
         changeOrigin: true, // Change the origin of the host header to the target URL
@@ -24,11 +47,10 @@ export default defineConfig({
           proxy.on('proxyRes', (proxyRes, req, res) => {
             console.log('Received response from target:', proxyRes.statusCode);
             proxyRes.on('data', (chunk) => {
-              console.log('Response chunk:', chunk.toString());
+              console.log('Response chunk:');
+              const data = JSON.parse(chunk.toString());
+              console.log(JSON.stringify(data, null, 2));
             });
-          });
-          proxy.on('error', (err, req, res) => {
-            console.error('Proxy error:', err);
           });
         },
       },

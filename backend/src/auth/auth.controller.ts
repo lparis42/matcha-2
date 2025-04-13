@@ -57,12 +57,11 @@ export class AuthController {
         return result;
     }
 
-    // Oauth 42 endpoints
+    // Oauth 42 endpoints with passport
 
     @Get('42')
     @UseGuards(AuthGuard('42'))
-    fortyTwoAuthorize() { 
-    }
+    fortyTwoAuthorize() { }
 
     @Get('42/callback')
     @UseGuards(AuthGuard('42'))

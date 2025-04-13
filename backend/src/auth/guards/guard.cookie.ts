@@ -33,6 +33,7 @@ export class CookieAuthGuard implements CanActivate {
         }
         // If the user exists, attach the user id to the request object
         request.user = { id: Number(userId) };
+        
         // Return true to indicate that the request is authenticated
         return true;
     }

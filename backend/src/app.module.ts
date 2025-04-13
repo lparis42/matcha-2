@@ -2,11 +2,9 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { ConfigModule } from '@nestjs/config';
-
-import pkg from 'pg';
 import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './db/db.module.js';
-const { Pool } = pkg;
+import { WebSocketModule } from './websocket/websocket.module.js';
 
 @Module({
   imports: [
@@ -15,6 +13,7 @@ const { Pool } = pkg;
     }),
     DatabaseModule,
     AuthModule,
+    WebSocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

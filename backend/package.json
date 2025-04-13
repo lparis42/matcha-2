@@ -22,9 +22,12 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/platform-socket.io": "^11.0.16",
+    "@nestjs/websockets": "^11.0.16",
     "@types/passport-42": "^1.1.1",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
+    "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
     "googleapis": "^148.0.0",
     "nodemailer": "^6.10.0",
@@ -33,7 +36,8 @@
     "passport-oauth2": "^1.8.0",
     "pg": "^8.14.1",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

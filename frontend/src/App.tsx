@@ -2,6 +2,7 @@ import { use, useEffect, useRef, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { io } from 'socket.io-client';
 
 function App() {
 
@@ -19,6 +20,22 @@ function App() {
         throw new Error(data.message);
       }
       console.log(data)
+      const socket = io('/', {
+        transports: ['websocket'],
+        autoConnect: false,
+        withCredentials: true,
+      });
+      socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+
+        socket.on('disconnect', () => {
+          console.log('Disconnected from WebSocket server');
+        });
+      });
+      socket.on('connect_error', (err) => {
+        console.error('Connection error:', err);
+      });
+      socket.connect();
     } catch (error) {
       console.error(error)
     }
@@ -31,8 +48,8 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          username: 'usertest', 
+        body: JSON.stringify({
+          username: 'usertest',
           password: 'passtestE42',
           first_name: 'John',
           last_name: 'Doe',
@@ -73,7 +90,7 @@ function App() {
   const Oauth42 = () => {
     window.location.href = '/api/auth/42';
   }
-  
+
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -92,6 +109,22 @@ function App() {
           throw new Error(data.message);
         }
         console.log(data);
+        const socket = io('/', {
+          transports: ['websocket'],
+          autoConnect: false,
+          withCredentials: true,
+        });
+        socket.on('connect', () => {
+          console.log('Connected to WebSocket server');
+  
+          socket.on('disconnect', () => {
+            console.log('Disconnected from WebSocket server');
+          });
+        });
+        socket.on('connect_error', (err) => {
+          console.error('Connection error:', err);
+        });
+        socket.connect();
       } catch (error) {
         console.error(error);
       }

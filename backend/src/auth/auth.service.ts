@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -114,7 +114,6 @@ export class AuthService {
         <p>If you did not request this, please ignore this email.</p>
       `,
     });
-
     // If the email is successfully sent, return a success message
     Logger.log(`User '${result.rows[0].id}' reset code sent successfully!`, 'AuthService');
     return { message: 'Reset code sent successfully!' };
