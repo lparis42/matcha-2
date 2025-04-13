@@ -22,9 +22,9 @@ const Callback42 = () => {
           },
         });
         const data = await response.json();
-        console.log('Données de l\'utilisateur :', data);
+        console.log('User data:', data);
       } catch (error) {
-        console.error('Erreur lors de la récupération du token :', error);
+        console.error('Error while retrieving the token:', error);
       } finally {
         navigate('/');
       }
@@ -33,7 +33,7 @@ const Callback42 = () => {
     fetchData();
   }, [searchParams, navigate]);
 
-  return <div>Connexion en cours...</div>;
+  return <div>Connecting...</div>;
 };
 
 export default Callback42;
