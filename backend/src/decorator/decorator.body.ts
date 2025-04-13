@@ -6,11 +6,9 @@ export const ValidateBody = (dto: any) =>
         const request = ctx.switchToHttp().getRequest();
         const body = request.body;
 
-        // Instanciation correcte du DTO
         const dtoInstance = new dto();
         Object.assign(dtoInstance, body);
 
-        // Validation du DTO
         const validation = validateDto(dtoInstance);
 
         if (!validation.valid) {

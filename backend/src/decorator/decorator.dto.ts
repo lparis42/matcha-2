@@ -42,13 +42,11 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const value = dto[key];
         console.log(`Validating property '${key}' with value '${value}'`);
 
-        // Validate email
         const emailRegex = Reflect.getMetadata('emailRegex', dto, key);
         if (emailRegex && (typeof value !== 'string' || !emailRegex.test(value))) {
             errors.push(`Invalid email format for property '${key}'.`);
         }
 
-        // Validate length 
         const lengthRange = Reflect.getMetadata('lengthRange', dto, key);
         if (lengthRange) {
             const { min, max } = lengthRange;
@@ -57,19 +55,16 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
             }
         }
 
-        // Validate password
         const passwordRegex = Reflect.getMetadata('passwordRegex', dto, key);
         if (passwordRegex && (typeof value !== 'string' || !passwordRegex.test(value))) {
             errors.push(`Invalid password format for property '${key}'. Password must include at least one uppercase letter, one lowercase letter, and one number.`);
         }
 
-        // Validate name
         const nameRegex = Reflect.getMetadata('nameRegex', dto, key);
         if (nameRegex && (typeof value !== 'string' || !nameRegex.test(value))) {
             errors.push(`Invalid name format for property '${key}'. Only alphabetic characters are allowed.`);
         }
 
-        // Validate code
         const codeRegex = Reflect.getMetadata('codeRegex', dto, key);
         if (codeRegex && (typeof value !== 'string' || !codeRegex.test(value))) {
             errors.push(`Invalid code format for property '${key}'.`);

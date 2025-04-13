@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, HttpStatus, Inject, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -12,6 +12,7 @@ import { UserData } from '../interfaces/interface.userdata.js';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @Inject('DATABASE_POOL')
@@ -28,7 +29,8 @@ export class AuthService {
       ['email', 'username'], `email = '${email}' OR username = '${username}'`);
     const selectResult = await this.pool.query(selectObject);
     if (selectResult.rowCount !== 0) {
-      throw new ConflictException('User already exists!');
+      this.logger.error(`User '${email}' or '${username}' already exists!`);
+      throw new HttpException('User already exists!', HttpStatus.CONFLICT);
     }
     // Insert the new user into the database
     // If the insert fails, throw an internal server error exception
@@ -39,32 +41,33 @@ export class AuthService {
     );
     const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
     if (!insertResult.rowCount) {
-      throw new InternalServerErrorException('Failed to sign up user!');
+      this.logger.error(`Failed to sign up user '${email}'!`);
+      throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     // If the user is successfully inserted, return a success message
-    Logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`, 'AuthService');
+    this.logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`);
     return { message: 'User signed up successfully!' };
   }
 
   async signIn(body: SignInDto): Promise<{ userId: number, message: string }> {
     const { username, password } = body;
-    // Check if the user exists in the database
-    // If the user does not exist, throw a bad request exception
+    // Check if the user exists in the database and if the password is correct
+    // If the user does not exist or the password is incorrect, throw a bad request exception
     const selectObject = this.databaseService.selectQuery('users',
       ['id', 'username', 'password'], `username = '${username}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      throw new BadRequestException('Invalid username!');
+      this.logger.error(`Invalid username or password for '${username}'!`);
+      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
     }
-    // Check if the password is correct
-    // If the password is incorrect, throw a bad request exception
     const isPasswordValid = await bcrypt.compare(password, result.rows[0].password);
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid password!');
+    if (!isPasswordValid) { 
+      this.logger.error(`Invalid password for '${username}'!`);
+      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
     }
     // If the password is correct, return a success message
     const userId = result.rows[0].id;
-    Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+    this.logger.log(`User '${userId}' signed in successfully!`);
     return { userId, message: 'User signed in successfully!' };
   }
 
@@ -75,7 +78,8 @@ export class AuthService {
     const selectObject = this.databaseService.selectQuery('users', ['email'], `email = '${email}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      throw new BadRequestException('Email not found!');
+      this.logger.error(`Email '${email}' not found!`);
+      throw new HttpException('Email not found!', HttpStatus.BAD_REQUEST);
     }
     // Update the user with the reset code
     // If the update fails, throw an internal server error exception
@@ -83,10 +87,11 @@ export class AuthService {
     const updateObject = this.databaseService.updateQuery('users', ['code'], `email = '${email}'`, [code]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
-      throw new InternalServerErrorException('Failed to send reset code!');
+      this.logger.error(`Failed to update reset code for email '${email}'!`);
+      throw new HttpException('Failed to send reset code!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     // Send the reset link using nodemailer and google OAuth2
-    // If the email fails to send, throw an internal server error excepti
+    // If the email fails to send, throw an internal server error exception
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -97,25 +102,30 @@ export class AuthService {
         refreshToken: this.configService.get<string>('GOOGLE_MAIL_REFRESH_TOKEN'),
       },
     });
-    await transporter.sendMail({
-      from: this.configService.get<string>('GMAIL_USER'),
-      to: email,
-      subject: 'Change Email',
-      text: `
-        Hello,
-        You requested to change your email address. Please click the link below to reset your email:
-        https://localhost:5173/reset-email?code=${code}
-        If you did not request this, please ignore this email.
-      `,
-      html: `
-        <h1>Hello,</h1>
-        <p>You requested to change your email address. Please click the link below to reset your email:</p>
-        <a href="https://localhost:5173/reset-email?code=${code}">Reset Email</a>
-        <p>If you did not request this, please ignore this email.</p>
-      `,
-    });
+    try {
+      await transporter.sendMail({
+        from: this.configService.get<string>('GMAIL_USER'),
+        to: email,
+        subject: 'Change Email',
+        text: `
+          Hello,
+          You requested to change your email address. Please click the link below to reset your email:
+          https://localhost:5173/reset-email?code=${code}
+          If you did not request this, please ignore this email.
+        `,
+        html: `
+          <h1>Hello,</h1>
+          <p>You requested to change your email address. Please click the link below to reset your email:</p>
+          <a href="https://localhost:5173/reset-email?code=${code}">Reset Email</a>
+          <p>If you did not request this, please ignore this email.</p>
+        `,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send reset email to '${email}'`);
+      throw new HttpException('Failed to send reset email!', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
     // If the email is successfully sent, return a success message
-    Logger.log(`User '${result.rows[0].id}' reset code sent successfully!`, 'AuthService');
+    this.logger.log(`User '${result.rows[0].id}' reset code sent successfully!`);
     return { message: 'Reset code sent successfully!' };
   }
 
@@ -126,17 +136,19 @@ export class AuthService {
     const selectObject = this.databaseService.selectQuery('users', ['email'], `code = '${code}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      throw new BadRequestException('Invalid email or code!');
+      this.logger.error(`Invalid email or code '${email}'!`);
+      throw new HttpException('Invalid email or code!', HttpStatus.BAD_REQUEST);
     }
     // Update the user with the new email
     // If the email already exists, throw a conflict exception
     const updateObject = this.databaseService.updateQuery('users', ['email', 'code'], `code = '${code}'`, [email, null]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
-      throw new InternalServerErrorException('Failed to update email!');
+      this.logger.error(`Failed to update email for '${email}'!`);
+      throw new HttpException('Failed to update email!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     // If the email is successfully updated, return a success message
-    Logger.log(`User '${result.rows[0].id}' email updated successfully!`, 'AuthService');
+    this.logger.log(`User '${result.rows[0].id}' email updated successfully!`);
     return { message: 'Email updated successfully!' };
   }
 
@@ -148,7 +160,7 @@ export class AuthService {
     const fortyTwoIdResult = await this.pool.query(selectfortyTwoId);
     if (fortyTwoIdResult.rowCount !== 0) {
       const userId = fortyTwoIdResult.rows[0].id;
-      Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+      this.logger.log(`User '${userId}' signed in successfully!`);
       return { userId: userId, message: 'User signed in successfully!' };
     }
     // Check if the email already exists in the database
@@ -159,10 +171,11 @@ export class AuthService {
       const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortytwo_id]);
       const updateFortyTwoIdResult = await this.pool.query(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
-        throw new InternalServerErrorException('Failed to update fortytwo_id!');
+        this.logger.error(`Failed to update fortytwo_id for email '${email}'!`);
+        throw new HttpException('Failed to update fortytwo_id!', HttpStatus.INTERNAL_SERVER_ERROR);
       }
       const userId = emailResult.rows[0].id;
-      Logger.log(`User '${userId}' signed in successfully!`, 'AuthService');
+      this.logger.log(`User '${userId}' signed in successfully!`);
       return { userId: userId, message: 'User signed in successfully!' };
     }
     // Check if the username already exists in the database
@@ -170,7 +183,8 @@ export class AuthService {
     const selectUsername = this.databaseService.selectQuery('users', ['username'], `username = '${username}'`);
     const usernameResult = await this.pool.query(selectUsername);
     if (usernameResult.rowCount !== 0) {
-      throw new ConflictException('Username already exists!');
+      this.logger.error(`Username '${username}' already exists!`);
+      throw new HttpException('Username already exists!', HttpStatus.CONFLICT);
     }
     // Insert the new user into the database
     // If the insert fails, throw an internal server error exception
@@ -188,11 +202,12 @@ export class AuthService {
     const insertPictureResult = await this.pool.query(insertPicture.query, insertPicture.params);
     if (!insertResult.rowCount || !insertPictureResult.rowCount) {
       await this.pool.query('ROLLBACK');
-      throw new InternalServerErrorException('Failed to sign up user!');
+      this.logger.error(`Failed to sign up user '${email}'!`);
+      throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     await this.pool.query('COMMIT');
     // If the user is successfully inserted, return a success message
-    Logger.log(`User '${userId}' signed up successfully!`, 'AuthService');
+    this.logger.log(`User '${userId}' signed up successfully!`);
     return { userId, message: 'User signed up successfully!' };
   }
 }
