@@ -8,17 +8,16 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <>
-        <header className='position-fixed w-100 top-0'>
+        <header >
         </header>
 
-        <main className='d-flex flex-column justify-content-center'
-          style={{ paddingTop: '9.0rem', paddingBottom: '9.0rem', minHeight: '100%' }} >
+        <main >
           <AppRoutes />
         </main>
 
-        <footer className='position-fixed w-100 bottom-0 right-0'>
+        <footer >
         </footer>
       </>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
