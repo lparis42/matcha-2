@@ -30,7 +30,7 @@ function App() {
 
   const SignUp = async () => {
     try {
-      const response = await fetch('/api/auth/sign-up', {
+      const response = await fetch('/api/auth/sign-up-no-email-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,6 +87,7 @@ function App() {
       hasFetched.current = true;
 
       try {
+        // If the user is signed in, establish a WebSocket connection
         const socket = io('/', {
           transports: ['websocket'],
           autoConnect: true,
@@ -102,8 +103,9 @@ function App() {
             console.log('Disconnected from WebSocket server');
           });
         });
-        socket.on('connect_error', (err) => {
+        socket.on('connect_error', async (err) => {
           console.error('Connection error:', err);
+          await fetch('/api/auth/delete-cookie', { method: 'GET' });
         });
       } catch (error) {
         console.error(error);

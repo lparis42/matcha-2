@@ -1,4 +1,5 @@
 import { Controller, Post, Get, UseGuards, Req, UseInterceptors, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { ValidateBody } from '../decorator/decorator.body.js';
 import { SignUpDto } from './dto/dto.signup.js';
@@ -16,6 +17,13 @@ export class AuthController {
     constructor(
         private readonly authService: AuthService,
     ) { }
+
+    @Get('delete-cookie')
+    deleteCookie(
+        @Res({ passthrough: true }) response: Response,
+    ): void {
+        response.clearCookie('access_token'); 
+    }
 
     @Post('sign-up')
     async signUp(
@@ -76,14 +84,6 @@ export class AuthController {
     }
 
     // Testing endpoints
-
-    @Post('auto-sign-in')
-    @UseGuards(CookieAuthGuard)
-    async autoSignIn(
-        @Req() req: Request,
-    ): Promise<{ userId: number, message: string }> {
-        return { userId: req.user!.id!, message: 'User signed in successfully!' };
-    }
 
     @Post('sign-up-no-email-verification')
     async signUpNoEmailVerification(

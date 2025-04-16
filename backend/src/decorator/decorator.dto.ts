@@ -38,7 +38,7 @@ export function verifyUUID(): PropertyDecorator {
 export function validateDto(dto: any): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    for (const key of Object.keys(dto)) { 
+    for (const key of Object.keys(dto)) {
         const value = dto[key];
 
         const emailRegex = Reflect.getMetadata('emailRegex', dto, key);
