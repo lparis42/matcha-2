@@ -93,12 +93,7 @@ export class AuthService {
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    try {
-      await this.mailService.sendVerificationEmail(email, uuid);
-    } catch (error) {
-      this.logger.error(`Failed to send verification email to '${email}'`);
-      throw new HttpException('Failed to send verification email!', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    await this.mailService.sendVerificationEmail(email, uuid);
 
     this.logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`);
     return { message: 'User signed up successfully!' };
@@ -162,7 +157,8 @@ export class AuthService {
     const uuid = uuidv4();
     const updateObject = this.databaseService.updateQuery('users', ['uuid'], `email = '${email}'`, [uuid]);
     await this.pool.query(updateObject.query, updateObject.params);
-    this.mailService.sendResetPasswordEmail(email, uuid);
+    
+    await this.mailService.sendResetPasswordEmail(email, uuid);
 
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
     return { message: 'Password updated successfully!' };
@@ -267,7 +263,7 @@ export class AuthService {
   }
 
   // For testing purposes only
-  
+
   /**
    * Signs up a new user without sending a verification email.
    *
