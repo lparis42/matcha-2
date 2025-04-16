@@ -5,8 +5,7 @@ import { Pool } from 'pg';
 export class AppService {
 
   constructor(
-    @Inject('DATABASE_POOL')
-    private readonly pool: InstanceType<typeof Pool>,
+
   ) { }
 
   // 

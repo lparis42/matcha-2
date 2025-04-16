@@ -23,8 +23,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     constructor(
         private readonly configService: ConfigService,
-        @Inject('DATABASE_POOL')
-        private readonly pool: InstanceType<typeof Pool>,
         private readonly databaseService: DatabaseService,
 
     ) {
@@ -68,7 +66,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             // Check if the user ID exists in the database
             // If the user ID does not exist, return an error
             const select = this.databaseService.selectQuery('users', ['id'], `id = '${userId}'`);
-            const result = await this.pool.query(select);
+            const result = await this.databaseService.query(select);
             if (result.rowCount === 0) {
                 this.logger.error('User not found');
                 return next(new HttpException('User not found', HttpStatus.UNAUTHORIZED));

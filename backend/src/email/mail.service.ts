@@ -16,11 +16,11 @@ export class MailService {
         type: 'OAuth2',
         clientId: this.configService.get<string>('GOOGLE_CLIENT_ID'),
         clientSecret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-        user: this.configService.get<string>('GOOGLE_GMAIL_USER'),
+        user: this.configService.get<string>('GOOGLE_MAIL_USER'),
         refreshToken: this.configService.get<string>('GOOGLE_MAIL_REFRESH_TOKEN'),
       },
       //logger: true,
-      //debug: true,
+      //debug: true, 
     });
   }
 

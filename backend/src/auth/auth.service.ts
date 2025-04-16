@@ -1,5 +1,4 @@
-import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
-import { Pool } from 'pg';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../db/db.service.js';
 import { SignInDto } from './dto/dto.signin.js';
@@ -16,8 +15,6 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @Inject('DATABASE_POOL')
-    private readonly pool: InstanceType<typeof Pool>,
     private readonly databaseService: DatabaseService,
     private readonly mailService: MailService,
   ) { }
@@ -36,7 +33,7 @@ export class AuthService {
 
     const selectObject = this.databaseService.selectQuery('users',
       ['id', 'username', 'password', 'is_verified'], `username = '${username}'`);
-    const result = await this.pool.query(selectObject);
+    const result = await this.databaseService.query(selectObject);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid username or password for '${username}'!`);
       throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
@@ -75,7 +72,7 @@ export class AuthService {
 
     const selectObject = this.databaseService.selectQuery('users',
       ['email', 'username'], `email = '${email}' OR username = '${username}'`);
-    const selectResult = await this.pool.query(selectObject);
+    const selectResult = await this.databaseService.query(selectObject);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);
       throw new HttpException('User already exists!', HttpStatus.CONFLICT);
@@ -87,7 +84,7 @@ export class AuthService {
       ['email', 'username', 'first_name', 'last_name', 'password', 'uuid'],
       [email, username, first_name, last_name, hashPassword, uuid]
     );
-    const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
+    const insertResult = await this.databaseService.query(insertObject.query + 'RETURNING id', insertObject.params);
     if (!insertResult.rowCount) {
       this.logger.error(`Failed to sign up user '${email}'!`);
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -112,7 +109,7 @@ export class AuthService {
   async verifyEmail(body: UUIDDto): Promise<{ message: string }> {
     const { uuid } = body;
     const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], `uuid = '${uuid}'`);
-    const result = await this.pool.query(selectObject);
+    const result = await this.databaseService.query(selectObject);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
       throw new HttpException('Invalid UUID!', HttpStatus.BAD_REQUEST);
@@ -125,7 +122,7 @@ export class AuthService {
     }
 
     const updateObject = this.databaseService.updateQuery('users', ['is_verified'], `id='${userId}'`, [true]);
-    const updateResult = await this.pool.query(updateObject.query, updateObject.params);
+    const updateResult = await this.databaseService.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       this.logger.error(`Failed to update to verify for user '${userId}'!`);
       throw new HttpException('Failed to update to verify!', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -148,7 +145,7 @@ export class AuthService {
     const { email } = body;
 
     const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `email = '${email}'`);
-    const result = await this.pool.query(selectObject);
+    const result = await this.databaseService.query(selectObject);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid email '${email}'!`);
       throw new HttpException('Invalid email!', HttpStatus.BAD_REQUEST);
@@ -156,8 +153,8 @@ export class AuthService {
 
     const uuid = uuidv4();
     const updateObject = this.databaseService.updateQuery('users', ['uuid'], `email = '${email}'`, [uuid]);
-    await this.pool.query(updateObject.query, updateObject.params);
-    
+    await this.databaseService.query(updateObject.query, updateObject.params);
+
     await this.mailService.sendResetPasswordEmail(email, uuid);
 
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
@@ -179,7 +176,7 @@ export class AuthService {
     const { uuid } = query;
 
     const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `uuid = '${uuid}'`);
-    const result = await this.pool.query(selectObject);
+    const result = await this.databaseService.query(selectObject);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
       throw new HttpException('Invalid UUID!', HttpStatus.BAD_REQUEST);
@@ -187,13 +184,13 @@ export class AuthService {
 
     const hashPassword = await bcrypt.hash(password, 10);
     const updateObject = this.databaseService.updateQuery('users', ['password'], `uuid='${uuid}'`, [hashPassword]);
-    const updateResult = await this.pool.query(updateObject.query, updateObject.params);
+    const updateResult = await this.databaseService.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       this.logger.error(`Failed to update password for userId '${result.rows[0].id}'!`);
       throw new HttpException('Failed to update password!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], `uuid='${uuid}'`, [null]);
-    await this.pool.query(invalidateUUID.query, invalidateUUID.params);
+    await this.databaseService.query(invalidateUUID.query, invalidateUUID.params);
 
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
     return { password: password, message: 'Password updated successfully!' };
@@ -211,7 +208,7 @@ export class AuthService {
     const { fortytwo_id, email, username, first_name, last_name, picture } = user;
 
     const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], `fortytwo_id = '${fortytwo_id}'`);
-    const fortyTwoIdResult = await this.pool.query(selectfortyTwoId);
+    const fortyTwoIdResult = await this.databaseService.query(selectfortyTwoId);
     if (fortyTwoIdResult.rowCount !== 0) {
       const userId = fortyTwoIdResult.rows[0].id;
       this.logger.log(`User '${userId}' signed in successfully!`);
@@ -219,10 +216,10 @@ export class AuthService {
     }
 
     const selectEmail = this.databaseService.selectQuery('users', ['email', 'username'], `email = '${email}' AND username = '${username}'`);
-    const emailResult = await this.pool.query(selectEmail);
+    const emailResult = await this.databaseService.query(selectEmail);
     if (emailResult.rowCount !== 0) {
       const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortytwo_id]);
-      const updateFortyTwoIdResult = await this.pool.query(updateFortyTwoId.query, updateFortyTwoId.params);
+      const updateFortyTwoIdResult = await this.databaseService.query(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
         this.logger.error(`Failed to update fortytwo_id for email '${email}'!`);
         throw new HttpException('Failed to update fortytwo_id!', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -233,30 +230,30 @@ export class AuthService {
     }
 
     const selectUsername = this.databaseService.selectQuery('users', ['username'], `username = '${username}'`);
-    const usernameResult = await this.pool.query(selectUsername);
+    const usernameResult = await this.databaseService.query(selectUsername);
     if (usernameResult.rowCount !== 0) {
       this.logger.error(`Username '${username}' already exists!`);
       throw new HttpException('Username already exists!', HttpStatus.CONFLICT);
     }
 
-    await this.pool.query('BEGIN');
+    await this.databaseService.query('BEGIN');
     const insertObject = this.databaseService.insertQuery(
       'users',
       ['email', 'username', 'first_name', 'last_name', 'fortytwo_id'],
       [email, username, first_name, last_name, fortytwo_id]
     );
-    const insertResult = await this.pool.query(insertObject.query + ' RETURNING id', insertObject.params);
+    const insertResult = await this.databaseService.query(insertObject.query + ' RETURNING id', insertObject.params);
     const userId = insertResult.rows[0].id;
     const insertPicture = this.databaseService.updateQuery(
       'users_pictures', ['picture_1'], `user_id = ${userId}`, [picture]
     );
-    const insertPictureResult = await this.pool.query(insertPicture.query, insertPicture.params);
+    const insertPictureResult = await this.databaseService.query(insertPicture.query, insertPicture.params);
     if (!insertResult.rowCount || !insertPictureResult.rowCount) {
-      await this.pool.query('ROLLBACK');
+      await this.databaseService.query('ROLLBACK');
       this.logger.error(`Failed to sign up user '${email}'!`);
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    await this.pool.query('COMMIT');
+    await this.databaseService.query('COMMIT');
 
     this.logger.log(`User '${userId}' signed up successfully!`);
     return { userId, message: 'User signed up successfully!' };
@@ -281,7 +278,7 @@ export class AuthService {
 
     const selectObject = this.databaseService.selectQuery('users',
       ['email', 'username'], `email = '${email}' OR username = '${username}'`);
-    const selectResult = await this.pool.query(selectObject);
+    const selectResult = await this.databaseService.query(selectObject);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);
       throw new HttpException('User already exists!', HttpStatus.CONFLICT);
@@ -293,7 +290,7 @@ export class AuthService {
       ['email', 'username', 'first_name', 'last_name', 'password', 'uuid', 'is_verified'],
       [email, username, first_name, last_name, hashPassword, uuid, true]
     );
-    const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
+    const insertResult = await this.databaseService.query(insertObject.query + 'RETURNING id', insertObject.params);
     if (!insertResult.rowCount) {
       this.logger.error(`Failed to sign up user '${email}'!`);
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);

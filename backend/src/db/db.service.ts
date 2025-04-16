@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config/index.js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import pkg from 'pg';
@@ -6,11 +7,18 @@ const { Pool } = pkg;
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
-    constructor(
-        @Inject('DATABASE_POOL')
-        private readonly pool: InstanceType<typeof Pool>
-    ) { }
+    private readonly pool: InstanceType<typeof Pool>;
 
+    constructor(private readonly configService: ConfigService) {
+        this.pool = new Pool({
+            host: this.configService.get<string>('DB_HOST'),
+            port: this.configService.get<number>('DB_PORT'),
+            user: this.configService.get<string>('DB_USERNAME'),
+            password: this.configService.get<string>('DB_PASSWORD'),
+            database: this.configService.get<string>('DB_NAME'),
+        });
+        Logger.log('Database connection established!', 'DatabaseService');
+    }
     async onModuleInit() {
 
         const dropUsersTableQuery = readFileSync(
@@ -32,6 +40,10 @@ export class DatabaseService implements OnModuleInit {
             RETURNING *;
         `;
         await this.pool.query(createTestUserQuery);
+    }
+
+    query(query: string, params: any[] = []): Promise<any> {
+        return this.pool.query(query, params);
     }
 
     selectQuery(table: string, columns: string[], where: string): string {
