@@ -32,7 +32,7 @@ export class CookieAuthGuard implements CanActivate {
             throw new HttpException('User not found!', HttpStatus.UNAUTHORIZED);
         }
         // If the user exists, attach the user id to the request object
-        request.user = { id: Number(userId) };
+        request.body.userId = Number(userId);
         
         // Return true to indicate that the request is authenticated
         return true;

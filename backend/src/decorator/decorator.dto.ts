@@ -35,6 +35,13 @@ export function verifyCode(): PropertyDecorator {
     }
 }
 
+export function verifyUUID(): PropertyDecorator {
+    return (target: Object, propertyKey: string | symbol) => {
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        Reflect.defineMetadata('uuidRegex', uuidRegex, target, propertyKey);
+    }
+}
+
 export function validateDto(dto: any): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
@@ -68,6 +75,11 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const codeRegex = Reflect.getMetadata('codeRegex', dto, key);
         if (codeRegex && (typeof value !== 'string' || !codeRegex.test(value))) {
             errors.push(`Invalid code format for property '${key}'.`);
+        }
+
+        const uuidRegex = Reflect.getMetadata('uuidRegex', dto, key);
+        if (uuidRegex && (typeof value !== 'string' || !uuidRegex.test(value))) {
+            errors.push(`Invalid UUID format for property '${key}'.`);
         }
     }
 
