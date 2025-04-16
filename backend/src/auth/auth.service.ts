@@ -6,11 +6,10 @@ import { SignInDto } from './dto/dto.signin.js';
 import { SignUpDto } from './dto/dto.signup.js';
 import { UserData } from '../interfaces/interface.userdata.js';
 import { MailService } from '../email/mail.service.js';
-import { VerifyEmailDto } from './dto/dto.verifyEmail.js';
 import { v4 as uuidv4 } from 'uuid';
-import { generatePassword } from './utils/utils.js';
-import { ResetPasswordDto } from './dto/dto.resetPassword.js';
-import { ChangePasswordDto } from './dto/dto.changePassword.js';
+import { UUIDDto } from './dto/dto.UUID.js';
+import { PasswordDto } from './dto/dto.password.js';
+import { EmailDto } from './dto/dto.email.js';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +21,42 @@ export class AuthService {
     private readonly databaseService: DatabaseService,
     private readonly mailService: MailService,
   ) { }
+
+  /**
+ * Signs in a user by validating their credentials.
+ *
+ * @param body - The data required for signing in.
+ * @param body.username - The username of the user.
+ * @param body.password - The password of the user.
+ * @returns A promise that resolves to an object containing the user ID and a success message.
+ * @throws {HttpException} If the username or password is invalid, or if the user is not verified.
+ */
+  async signIn(body: SignInDto): Promise<{ userId: number, message: string }> {
+    const { username, password } = body;
+
+    const selectObject = this.databaseService.selectQuery('users',
+      ['id', 'username', 'password', 'is_verified'], `username = '${username}'`);
+    const result = await this.pool.query(selectObject);
+    if (result.rowCount === 0) {
+      this.logger.error(`Invalid username or password for '${username}'!`);
+      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, result.rows[0].password);
+    if (!isPasswordValid) {
+      this.logger.error(`Invalid password for '${username}'!`);
+      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!result.rows[0].is_verified) {
+      this.logger.error(`User '${username}' is not verified!`);
+      throw new HttpException('User is not verified!', HttpStatus.BAD_REQUEST);
+    }
+
+    const userId = result.rows[0].id;
+    this.logger.log(`User '${userId}' signed in successfully!`);
+    return { userId, message: 'User signed in successfully!' };
+  }
 
   /**
    * Signs up a new user by validating their credentials and sending a verification email.
@@ -49,7 +84,7 @@ export class AuthService {
     const hashPassword = await bcrypt.hash(password, 10);
     const uuid = uuidv4();
     const insertObject = this.databaseService.insertQuery('users',
-      ['email', 'username', 'first_name', 'last_name', 'password, verify_email_code'],
+      ['email', 'username', 'first_name', 'last_name', 'password', 'uuid'],
       [email, username, first_name, last_name, hashPassword, uuid]
     );
     const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
@@ -59,7 +94,7 @@ export class AuthService {
     }
 
     try {
-      this.mailService.sendVerificationEmail(email, insertResult.rows[0].id, uuid);
+      this.mailService.sendVerificationEmail(email, uuid);
     } catch (error) {
       this.logger.error(`Failed to send verification email to '${email}'`);
       throw new HttpException('Failed to send verification email!', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -70,7 +105,8 @@ export class AuthService {
   }
 
   /**
-   * Signs up a new user by validating their credentials but without sending a verification email.
+   * For testing purposes only:
+   * Signs up a new user without sending a verification email.
    *
    * @param body - The data required for signing up.
    * @param body.email - The email address of the user.
@@ -95,7 +131,7 @@ export class AuthService {
     const hashPassword = await bcrypt.hash(password, 10);
     const uuid = uuidv4();
     const insertObject = this.databaseService.insertQuery('users',
-      ['email', 'username', 'first_name', 'last_name', 'password, verify_email_code', 'is_verified'],
+      ['email', 'username', 'first_name', 'last_name', 'password', 'uuid', 'is_verified'],
       [email, username, first_name, last_name, hashPassword, uuid, true]
     );
     const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
@@ -109,42 +145,6 @@ export class AuthService {
   }
 
   /**
-   * Signs in a user by validating their credentials.
-   *
-   * @param body - The data required for signing in.
-   * @param body.username - The username of the user.
-   * @param body.password - The password of the user.
-   * @returns A promise that resolves to an object containing the user ID and a success message.
-   * @throws {HttpException} If the username or password is invalid, or if the user is not verified.
-   */
-  async signIn(body: SignInDto): Promise<{ userId: number, message: string }> {
-    const { username, password } = body;
-
-    const selectObject = this.databaseService.selectQuery('users',
-      ['id', 'username', 'password, is_verified'], `username = '${username}'`);
-    const result = await this.pool.query(selectObject);
-    if (result.rowCount === 0) {
-      this.logger.error(`Invalid username or password for '${username}'!`);
-      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, result.rows[0].password);
-    if (!isPasswordValid) {
-      this.logger.error(`Invalid password for '${username}'!`);
-      throw new HttpException('Invalid username or password!', HttpStatus.BAD_REQUEST);
-    }
-
-    if (!result.rows[0].is_verified) {
-      this.logger.error(`User '${username}' is not verified!`);
-      throw new HttpException('User is not verified!', HttpStatus.BAD_REQUEST);
-    }
-
-    const userId = result.rows[0].id;
-    this.logger.log(`User '${userId}' signed in successfully!`);
-    return { userId, message: 'User signed in successfully!' };
-  }
-
-  /**
   * Verifies a user's email address using a verification code.
   *
   * @param body - The data required for email verification.
@@ -154,18 +154,19 @@ export class AuthService {
   * @throws {HttpException} If the user ID is invalid, the verification code is incorrect,
   * or if the database update fails.
   */
-  async verifyEmail(body: VerifyEmailDto): Promise<{ message: string }> {
-    const { userId, uuid } = body;
-    const selectObject = this.databaseService.selectQuery('users', ['id', 'verify_email_code'], `id = '${userId}'`);
+  async verifyEmail(body: UUIDDto): Promise<{ message: string }> {
+    const { uuid } = body;
+    const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], `uuid = '${uuid}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      this.logger.error(`Invalid userId with id ${userId}'!`);
-      throw new HttpException('Invalid email or code!', HttpStatus.BAD_REQUEST);
+      this.logger.error(`Invalid UUID '${uuid}'!`);
+      throw new HttpException('Invalid UUID!', HttpStatus.BAD_REQUEST);
     }
 
-    if (result.rows[0].verify_email_code !== uuid) {
+    const userId = result.rows[0].id;
+    if (result.rows[0].uuid !== uuid) {
       this.logger.error(`Invalid verification code for userId '${userId}'!`);
-      throw new HttpException('Invalid email or code!', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Invalid email or uuid!', HttpStatus.BAD_REQUEST);
     }
 
     const updateObject = this.databaseService.updateQuery('users', ['is_verified'], `id='${userId}'`, [true]);
@@ -180,7 +181,7 @@ export class AuthService {
   }
 
   /**
-   * Resets the password for a user by sending a reset email.
+   * Requests a password reset for a user by sending a reset email.
    *
    * @param body - The data required for password reset.
    * @param body.email - The email address of the user requesting the password reset.
@@ -188,7 +189,7 @@ export class AuthService {
    * @throws {HttpException} If the email is invalid, the password update fails,
    * or if sending the reset email fails.
    */
-  async resetPassword(body: ResetPasswordDto): Promise<{ message: string }> {
+  async forgotPassword(body: EmailDto): Promise<{ message: string }> {
     const { email } = body;
 
     const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `email = '${email}'`);
@@ -198,74 +199,54 @@ export class AuthService {
       throw new HttpException('Invalid email!', HttpStatus.BAD_REQUEST);
     }
 
-    const newPassword = generatePassword(10);
-    const hashPassword = await bcrypt.hash(newPassword, 10);
+    const uuid = uuidv4();
+    const updateObject = this.databaseService.updateQuery('users', ['uuid'], `email = '${email}'`, [uuid]);
+    await this.pool.query(updateObject.query, updateObject.params);
+    this.mailService.sendResetPasswordEmail(email, uuid);
 
-    const updateObject = this.databaseService.updateQuery('users', ['password'], `email = '${email}'`, [hashPassword]);
-    const updateResult = await this.pool.query(updateObject.query, updateObject.params);
-    if (updateResult.rowCount === 0) {
-      this.logger.error(`Failed to update password for '${email}'!`);
-      throw new HttpException('Failed to update password!', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    try {
-      this.mailService.sendResetPasswordEmail(email, newPassword);
-    }
-    catch (error) {
-      this.logger.error(`Failed to send reset password email to '${email}'`);
-      throw new HttpException('Failed to send reset password email!', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
     return { message: 'Password updated successfully!' };
   }
 
   /**
-   * Changes the password for a user.
+   * Generates a new password for a user and updates it in the database.
    *
-   * @param body - The data required for changing the password.
-   * @param body.userId - The ID of the user whose password is being changed.
-   * @param body.oldPassword1 - The current password of the user.
-   * @param body.oldPassword2 - A confirmation of the current password.
-   * @param body.newPassword - The new password for the user.
-   * @returns A promise that resolves to an object containing a success message.
-   * @throws {HttpException} If the user ID is invalid, the passwords do not match,
-   * or if the database update fails.
+   * @param body - The data required for password generation.
+    * @param body.password - The new password for the user.
+    * @param body.uuid - The unique verification code sent to the user's email.
+    * @returns A promise that resolves to an object containing the new password and a success message.
+    * @throws {HttpException} If the user ID is invalid, the password update fails,
+   * or if the database operation fails.
    */
-  async changePassword(body: ChangePasswordDto): Promise<{ message: string }> {
-    const { userId, oldPassword1, oldPassword2, newPassword } = body;
+  async resetPassword(body: PasswordDto, query: UUIDDto): Promise<{ password: string, message: string }> {
+    const { password } = body;
+    const { uuid } = query;
 
-    this.logger.log(`Changing password for userId '${userId}'...`);
-    const selectObject = this.databaseService.selectQuery('users', ['id', 'password'], `id = '${userId}'`);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `uuid = '${uuid}'`);
     const result = await this.pool.query(selectObject);
     if (result.rowCount === 0) {
-      this.logger.error(`Invalid userId with id ${userId}'!`);
-      throw new HttpException('Invalid userId!', HttpStatus.BAD_REQUEST);
+      this.logger.error(`Invalid UUID '${uuid}'!`);
+      throw new HttpException('Invalid UUID!', HttpStatus.BAD_REQUEST);
     }
 
-    const isPasswordValid = await bcrypt.compare(oldPassword1, result.rows[0].password);
-    if (!isPasswordValid) { 
-      this.logger.error(`Invalid password for userId '${userId}'!`);
-      throw new HttpException('Invalid password!', HttpStatus.BAD_REQUEST);
-    }
-    if (oldPassword1 !== oldPassword2) {
-      this.logger.error(`Passwords do not match for userId '${userId}'!`);
-      throw new HttpException('Passwords do not match!', HttpStatus.BAD_REQUEST);
-    }
-
-    const hashPassword = await bcrypt.hash(newPassword, 10);
-    const updateObject = this.databaseService.updateQuery('users', ['password'], `id = '${userId}'`, [hashPassword]);
+    const hashPassword = await bcrypt.hash(password, 10);
+    const updateObject = this.databaseService.updateQuery('users', ['password'], `uuid='${uuid}'`, [hashPassword]);
     const updateResult = await this.pool.query(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
-      this.logger.error(`Failed to update password for userId '${userId}'!`);
+      this.logger.error(`Failed to update password for userId '${result.rows[0].id}'!`);
       throw new HttpException('Failed to update password!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    this.logger.log(`User '${userId}' password updated successfully!`);
-    return { message: 'Password updated successfully!' };
+    const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], `uuid='${uuid}'`, [null]);
+    await this.pool.query(invalidateUUID.query, invalidateUUID.params);
+
+    this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
+    return { password: password, message: 'Password updated successfully!' };
   }
 
   /**
    * Connects a user to the FortyTwo service.
    *
-   * @param user - The user data from the FortyTwo service.
+   * @param user - Partial user data from the FortyTwo service.
    * @returns A promise that resolves to an object containing the user ID and a success message.
    * @throws {HttpException} If the user already exists, the username already exists,
    * or if the database operation fails.
@@ -281,7 +262,7 @@ export class AuthService {
       return { userId: userId, message: 'User signed in successfully!' };
     }
 
-    const selectEmail = this.databaseService.selectQuery('users', ['email, username'], `email = '${email}' AND username = '${username}'`);
+    const selectEmail = this.databaseService.selectQuery('users', ['email', 'username'], `email = '${email}' AND username = '${username}'`);
     const emailResult = await this.pool.query(selectEmail);
     if (emailResult.rowCount !== 0) {
       const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = '${email}'`, [fortytwo_id]);
@@ -320,7 +301,7 @@ export class AuthService {
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     await this.pool.query('COMMIT');
-    // If the user is successfully inserted, return a success message
+
     this.logger.log(`User '${userId}' signed up successfully!`);
     return { userId, message: 'User signed up successfully!' };
   }
