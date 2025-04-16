@@ -8,6 +8,7 @@ CREATE TABLE users (
     password VARCHAR(255),
     gender VARCHAR(255),
     sexual_preferences VARCHAR(255),
+    fame_rating INT DEFAULT 0,
     biography VARCHAR(255),
     uuid VARCHAR(255),
     is_verified BOOLEAN DEFAULT false,

@@ -6,7 +6,7 @@ import { SignUpDto } from './dto/dto.signup.js';
 import { UserData } from '../interfaces/interface.userdata.js';
 import { MailService } from '../email/mail.service.js';
 import { v4 as uuidv4 } from 'uuid';
-import { UUIDDto } from './dto/dto.uuid.js';
+import { UUIDDto } from './dto/dto.UUID.js';
 import { PasswordDto } from './dto/dto.password.js';
 import { EmailDto } from './dto/dto.email.js';
 
