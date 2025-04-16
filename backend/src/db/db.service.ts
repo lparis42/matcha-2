@@ -46,9 +46,10 @@ export class DatabaseService implements OnModuleInit {
         return this.pool.query(query, params);
     }
 
-    selectQuery(table: string, columns: string[], where: string): string {
-        return `SELECT ${columns.join(', ')} FROM ${table} WHERE ${where}`;
-    } 
+    selectQuery(table: string, columns: string[], whereClause: string, whereValues: any[]): { query: string, params: any[] } {
+        const query = `SELECT ${columns.join(', ')} FROM ${table} WHERE ${whereClause}`;
+        return { query, params: whereValues };
+    }
 
     insertQuery(table: string, columns: string[], values: any[]): { query: string; params: any[] } {
         const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
@@ -56,14 +57,18 @@ export class DatabaseService implements OnModuleInit {
         return { query, params: values };
     }
 
-    updateQuery(table: string, set: string[], where: string, values: any[]): { query: string; params: any[] } {
+    updateQuery(table: string, set: string[], whereClause: string, values: any[], whereValues: any[]): { query: string; params: any[] } {
         const setClause = set.map((column, index) => `${column} = $${index + 1}`).join(', ');
-        const query = `UPDATE ${table} SET ${setClause} WHERE ${where}`;
-        return { query, params: values };
+
+        const offset = values.length;
+        const whereClauseWithPlaceholders = whereClause.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + offset}`);
+
+        const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClauseWithPlaceholders}`;
+        return { query, params: [...values, ...whereValues] };
     }
 
-    deleteQuery(table: string, where: string, values: any[]): { query: string; params: any[] } {
-        const query = `DELETE FROM ${table} WHERE ${where}`;
-        return { query, params: values };
+    deleteQuery(table: string, whereClause: string, whereValues: any[]): { query: string; params: any[] } {
+        const query = `DELETE FROM ${table} WHERE ${whereClause}`;
+        return { query, params: whereValues };
     }
 }
