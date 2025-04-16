@@ -9,7 +9,7 @@ export class MailService {
 
   constructor(
     private configService: ConfigService) {
-    this.gmailUser = this.configService.get<string>('GMAIL_USER')!;
+    this.gmailUser = this.configService.get<string>('GOOGLE_MAIL_USER')!;
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {

@@ -94,50 +94,10 @@ export class AuthService {
     }
 
     try {
-      this.mailService.sendVerificationEmail(email, uuid);
+      await this.mailService.sendVerificationEmail(email, uuid);
     } catch (error) {
       this.logger.error(`Failed to send verification email to '${email}'`);
       throw new HttpException('Failed to send verification email!', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    this.logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`);
-    return { message: 'User signed up successfully!' };
-  }
-
-  /**
-   * For testing purposes only:
-   * Signs up a new user without sending a verification email.
-   *
-   * @param body - The data required for signing up.
-   * @param body.email - The email address of the user.
-   * @param body.username - The username of the user.
-   * @param body.first_name - The first name of the user.
-   * @param body.last_name - The last name of the user.
-   * @param body.password - The password of the user.
-   * @returns A promise that resolves to an object containing a success message.
-   * @throws {HttpException} If the email or username already exists, or if the database operation fails.
-   */
-  async signUpNoEmailVerification(body: SignUpDto): Promise<{ message: string }> {
-    const { email, username, first_name, last_name, password } = body;
-
-    const selectObject = this.databaseService.selectQuery('users',
-      ['email', 'username'], `email = '${email}' OR username = '${username}'`);
-    const selectResult = await this.pool.query(selectObject);
-    if (selectResult.rowCount !== 0) {
-      this.logger.error(`User '${email}' or '${username}' already exists!`);
-      throw new HttpException('User already exists!', HttpStatus.CONFLICT);
-    }
-
-    const hashPassword = await bcrypt.hash(password, 10);
-    const uuid = uuidv4();
-    const insertObject = this.databaseService.insertQuery('users',
-      ['email', 'username', 'first_name', 'last_name', 'password', 'uuid', 'is_verified'],
-      [email, username, first_name, last_name, hashPassword, uuid, true]
-    );
-    const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
-    if (!insertResult.rowCount) {
-      this.logger.error(`Failed to sign up user '${email}'!`);
-      throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     this.logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`);
@@ -304,5 +264,46 @@ export class AuthService {
 
     this.logger.log(`User '${userId}' signed up successfully!`);
     return { userId, message: 'User signed up successfully!' };
+  }
+
+  // For testing purposes only
+  
+  /**
+   * Signs up a new user without sending a verification email.
+   *
+   * @param body - The data required for signing up.
+   * @param body.email - The email address of the user.
+   * @param body.username - The username of the user.
+   * @param body.first_name - The first name of the user.
+   * @param body.last_name - The last name of the user.
+   * @param body.password - The password of the user.
+   * @returns A promise that resolves to an object containing a success message.
+   * @throws {HttpException} If the email or username already exists, or if the database operation fails.
+   */
+  async signUpNoEmailVerification(body: SignUpDto): Promise<{ message: string }> {
+    const { email, username, first_name, last_name, password } = body;
+
+    const selectObject = this.databaseService.selectQuery('users',
+      ['email', 'username'], `email = '${email}' OR username = '${username}'`);
+    const selectResult = await this.pool.query(selectObject);
+    if (selectResult.rowCount !== 0) {
+      this.logger.error(`User '${email}' or '${username}' already exists!`);
+      throw new HttpException('User already exists!', HttpStatus.CONFLICT);
+    }
+
+    const hashPassword = await bcrypt.hash(password, 10);
+    const uuid = uuidv4();
+    const insertObject = this.databaseService.insertQuery('users',
+      ['email', 'username', 'first_name', 'last_name', 'password', 'uuid', 'is_verified'],
+      [email, username, first_name, last_name, hashPassword, uuid, true]
+    );
+    const insertResult = await this.pool.query(insertObject.query + 'RETURNING id', insertObject.params);
+    if (!insertResult.rowCount) {
+      this.logger.error(`Failed to sign up user '${email}'!`);
+      throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    this.logger.log(`User '${insertResult.rows[0].id}' signed up successfully!`);
+    return { message: 'User signed up successfully!' };
   }
 }
