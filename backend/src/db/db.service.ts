@@ -34,15 +34,15 @@ export class DatabaseService implements OnModuleInit {
         Logger.log('Table "users" created successfully!', 'DatabaseInitService');
 
         // For testing purposes, we can create a test user with default values.
-        const createTestUserQuery = `
-            INSERT INTO users (email, username, first_name, last_name, password, gender, sexual_preferences, biography)
-            VALUES ('user@example.com', 'username1', 'John', 'Doe', 'password123', 'male', 'female', 'Hello world!')
-            RETURNING *;
-        `;
-        await this.pool.query(createTestUserQuery);
+        const insertQuery = this.insertQuery(
+            'users',
+            ['email', 'username', 'first_name', 'last_name', 'password', 'gender', 'sexual_preferences', 'biography'],
+            ['user@example.com', 'username1', 'John', 'Doe', 'password123', 'male', 'female', 'Hello world!']
+        );
+        await this.execute(insertQuery.query, insertQuery.params);
     }
 
-    query(query: string, params: any[] = []): Promise<any> {
+    execute(query: string, params: any[] = []): Promise<any> {
         return this.pool.query(query, params);
     }
 
