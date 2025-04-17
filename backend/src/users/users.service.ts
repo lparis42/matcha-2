@@ -4,6 +4,7 @@ import { DatabaseService } from "../db/db.service.js";
 import { UsersMapper } from "./mapper/mapper.users-interface.js";
 import { IdDto } from "./dto/dto.id.js";
 import { UserProfileDto } from "./dto/dto.user-profile.js";
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -58,6 +59,10 @@ export class UsersService {
         // Update users table
         const columnNames = Object.keys(body).filter(key => !['interests', 'pictures'].includes(key));
         const values = Object.values(body).filter(value => typeof value === 'string' && !['interests', 'pictures'].includes(value));
+        if (body.password) {
+            const hashedPassword = await bcrypt.hash(body.password, 10);
+            values[columnNames.indexOf('password')] = hashedPassword;
+        }
         const updateObject = this.databaseService.updateQuery('users', columnNames, values, [userId]);
         const result = await this.databaseService.execute(updateObject.query, updateObject.params);
         if (result.rowCount === 0) {

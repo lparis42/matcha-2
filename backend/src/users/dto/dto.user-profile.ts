@@ -4,18 +4,23 @@ import { Gender, Interests, Pictures, SexualPreferences } from '../interfaces/in
 export class UserProfileDto {
 
     @verifyEmail()
-    email?: string;
-
-    @verifyName()
-    first_name?: string;
-
-    @verifyName()
-    last_name?: string;
+    @verifyLength(6, 255)
+    email!: string;
 
     @verifyPassword()
-    password?: string;
+    @verifyLength(8, 64)
+    password!: string;
+
+    @verifyName()
+    @verifyLength(3, 20)
+    first_name!: string;
+
+    @verifyName()
+    @verifyLength(3, 20)
+    last_name!: string;
 
     @verifyDate()
+    @verifyLength(10, 10)
     date_of_birth?: string;
 
     @verifyGender()
