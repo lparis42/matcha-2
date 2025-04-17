@@ -14,6 +14,18 @@ export function verifyLength(min: number, max: number): PropertyDecorator {
     };
 }
 
+export function verifyOptionnalBooleans(): PropertyDecorator {
+    return (target: Object, propertyKey: string | symbol) => {
+      const type = Reflect.getMetadata('design:type', target, propertyKey);
+  
+      if (type !== Boolean) {
+        throw new Error(`Property "${String(propertyKey)}" must be of type 'boolean | undefined'`);
+      }
+  
+      Reflect.defineMetadata('isOptionalBoolean', true, target, propertyKey);
+    };
+  }
+
 export function verifyPassword(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]+$/;
@@ -79,6 +91,11 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const uuidRegex = Reflect.getMetadata('uuidRegex', dto, key);
         if (uuidRegex && (typeof value !== 'string' || !uuidRegex.test(value))) {
             errors.push(`Property '${key}' must be a valid UUID v4.`);
+        }
+
+        const isBoolean = Reflect.getMetadata('isOptionalBoolean', dto, key);
+        if (isBoolean && value !== undefined && typeof value !== 'boolean') {
+            errors.push(`Property '${key}' must be a boolean.`);
         }
     }
 
