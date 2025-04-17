@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext, BadRequestException } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { validateDto } from './decorator.dto.js';
 
 export const ValidateParam = (dto: any) =>
@@ -12,7 +12,7 @@ export const ValidateParam = (dto: any) =>
         const validation = validateDto(dtoInstance);
 
         if (!validation.valid) {
-            throw new BadRequestException(`Validation failed: ${validation.errors.join(' ')}`);
+            throw new HttpException(`Validation failed: ${validation.errors.join(' ')}`, HttpStatus.BAD_REQUEST);
         }
 
         return dtoInstance;

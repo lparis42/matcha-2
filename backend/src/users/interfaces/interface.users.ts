@@ -1,35 +1,61 @@
-export interface UsersInterface {
+export interface UserProfile {
     id?: number;
     username?: string;
     email?: string;
     firstName?: string;
     lastName?: string;
     dateOfBirth?: Date;
-    gender?: GenderInterface;
-    sexualPreferences?: SexualPreferencesInterface;
+    gender?: Gender;
+    sexualPreferences?: SexualPreferences;
     fameRating?: number;
     biography?: string;
-    interests?: InterestInterface;
-    pictures?: string[];
+    interests?: Interests;
+    pictures?: Pictures;
 }
 
-export interface GenderInterface {
-    Gender: 'Male' | 'Female' | 'Non-Binary' | 'Other';
+export const GENDERS = [
+    'Male',
+    'Female',
+    'Non-Binary',
+    'Other',
+] as const;
+export interface Gender {
+    Gender: typeof GENDERS[number];
 }
 
-export interface SexualPreferencesInterface {
-    SexualPreference: 'Heterosexual' | 'Bisexual' | 'Homosexual' | 'Pansexual' | 'Asexual' | 'Queer' | 'Other';
+export const SEXUAL_PREFERENCES = [
+    'Heterosexual',
+    'Bisexual',
+    'Homosexual',
+    'Other',
+] as const;
+export interface SexualPreferences {
+    SexualPreference: typeof SEXUAL_PREFERENCES[number];
 }
 
-export interface InterestInterface {
-    Technology: boolean;
-    Sports: boolean;
-    Music: boolean;
-    Travel: boolean;
-    Food: boolean;
-    Movies: boolean;
-    Books: boolean;
-    Art: boolean;
-    Nature: boolean;
-    Fitness: boolean;
-}
+export const INTEREST_KEYS = [
+    'technology',
+    'sports',
+    'music',
+    'travel',
+    'food',
+    'movies',
+    'books',
+    'art',
+    'nature',
+    'fitness',
+] as const;
+export type Interests = {
+    [K in typeof INTEREST_KEYS[number]]: boolean;
+};
+
+export const PICTURES_KEYS = [
+    'picture_1',
+    'picture_2',
+    'picture_3',
+    'picture_4',
+    'picture_5',
+] as const;
+export type Pictures = {
+    [K in typeof PICTURES_KEYS[number]]: string;
+};

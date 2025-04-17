@@ -1,7 +1,7 @@
 import { UsersTableInterface } from "../../db/interfaces/interface.users-table.js";
-import { UsersInterface } from "../interfaces/interface.users.js";
+import { UserProfile } from "../interfaces/interface.users.js";
 
-export function UsersInterfaceMapper(usersTable: UsersTableInterface): UsersInterface {
+export function UsersMapper(usersTable: UsersTableInterface): UserProfile {
     return {
         id: usersTable.id,
         username: usersTable.username,

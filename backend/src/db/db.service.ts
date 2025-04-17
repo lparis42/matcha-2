@@ -61,6 +61,16 @@ export class DatabaseService implements OnModuleInit {
         return this.pool.query(query, params);
     }
 
+    beginTransaction(): Promise<any> {
+        return this.pool.query('BEGIN');
+    }
+    commitTransaction(): Promise<any> {
+        return this.pool.query('COMMIT');
+    }
+    rollbackTransaction(): Promise<any> {
+        return this.pool.query('ROLLBACK');
+    }
+
     selectQuery(table: string, columnNames: string[], whereParams: any[]): { query: string, params: any[] } {
         const whereClause = whereParams.map((_, index) => `${columnNames[index]} = $${index + 1}`).join(' AND ');
         const safeTableName = `"${table.replace(/"/g, '""')}"`;

@@ -1,4 +1,4 @@
-import { GenderInterface, SexualPreferencesInterface } from "../../users/interfaces/interface.users.js";
+import { Gender, SexualPreferences } from "../../users/interfaces/interface.users.js";
 
 export interface UsersTableInterface {
     id: number;
@@ -9,8 +9,8 @@ export interface UsersTableInterface {
     last_name: string;
     password?: string;
     date_of_birth?: Date;
-    gender?: GenderInterface;
-    sexual_preferences?: SexualPreferencesInterface;
+    gender?: Gender;
+    sexual_preferences?: SexualPreferences;
     fame_rating: number;
     biography?: string;
     uuid?: string;

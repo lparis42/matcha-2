@@ -1,4 +1,4 @@
-export interface DBUsersInterests {
+export interface UsersInterestsTableInterface {
     user_id: number;
     technology: boolean;
     sports: boolean;
@@ -10,5 +10,5 @@ export interface DBUsersInterests {
     art: boolean;
     nature: boolean;
     fitness: boolean;
-    created_at?: string;
+    created_at: Date;
 }
