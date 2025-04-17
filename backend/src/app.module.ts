@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './db/db.module.js';
 import { WebSocketModule } from './websocket/websocket.module.js';
 import { UsersModule } from './users/users.module.js';
+import { UsersInterestsModule } from './users-interests/users-interests.module.js';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { UsersModule } from './users/users.module.js';
     DatabaseModule,
     AuthModule,
     WebSocketModule,
-    UsersModule
+    UsersModule,
+    UsersInterestsModule
   ],
   controllers: [AppController],
   providers: [AppService],

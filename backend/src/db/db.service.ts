@@ -44,6 +44,8 @@ export class DatabaseService implements OnModuleInit {
 
     execute(query: string, params: any[] = []): Promise<any> {
         try {
+            Logger.log(`Executing query: ${query}`, 'DatabaseService');
+            Logger.log(`With parameters: ${params}`, 'DatabaseService');
             return this.pool.query(query, params);
         }
         catch (error) {
