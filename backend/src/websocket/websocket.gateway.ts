@@ -64,7 +64,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             }
             // Check if the user ID exists in the database
             // If the user ID does not exist, return an error
-            const select = this.databaseService.selectQuery('users', ['id'], [userId]);
+            const select = this.databaseService.selectQuery('users', ['id'], [{ id: userId }]);
             const result = await this.databaseService.execute(select.query, select.params);
             if (result.rowCount === 0) {
                 this.logger.error('User not found');

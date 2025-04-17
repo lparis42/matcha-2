@@ -22,7 +22,7 @@ export class UsersService {
      */
     async getUserById(params: IdDto, userId: number): Promise<{ user: Partial<UserProfile>, message: string }> {
         const { id } = params;
-        const selectObject = this.databaseService.selectQuery('users', [], [id]);
+        const selectObject = this.databaseService.selectQuery('users', [], [{ id }]);
         const result = await this.databaseService.execute(selectObject.query, selectObject.params);
         if (result.rowCount === 0) {
             this.logger.error(`User with ID ${id} not found`, UsersService.name);
@@ -55,6 +55,8 @@ export class UsersService {
     * @throws HttpException if the update operation fails.
     **/
     async updateUser(body: UserProfileDto, userId: number): Promise<{ message: string }> {
+        console.log('body', body);
+        console.log('userId', userId);
         this.databaseService.beginTransaction();
         // Update users table
         const columnNames = Object.keys(body).filter((key, _) =>
@@ -66,22 +68,23 @@ export class UsersService {
             const hashedPassword = await bcrypt.hash(body.password, 10);
             values[columnNames.indexOf('password')] = hashedPassword;
         }
-        const updateObject = this.databaseService.updateQuery('users', columnNames, values, [userId]);
+        const updateObject = this.databaseService.updateQuery('users', columnNames, values, [{ id: userId }]);
         const result = await this.databaseService.execute(updateObject.query, updateObject.params);
         if (result.rowCount === 0) {
             this.databaseService.rollbackTransaction();
             this.logger.error(`Failed to update user with ID ${userId}`, UsersService.name);
             throw new HttpException('Failed to update user', HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        if (body.interests) {
+        if (Array.isArray(body.interests) && body.interests.length > 0) {
             // Update users_interests table
-            const interestColumns = Object.keys(body.interests);
-            const interestValues = Object.values(body.interests);
+            const interestColumns = Object.keys(body.interests[0]);
+            const interestValues = Object.values(body.interests[0]);
             const updateInterestsObject = this.databaseService.updateQuery(
-                'user_interests', interestColumns, interestValues, [userId]
+                'users_interests', interestColumns, interestValues, [{ id: userId }]
             );
+            console.log('updateInterestsObject', updateInterestsObject);
             const interestResult = await this.databaseService.execute(
-                updateInterestsObject.query, updateInterestsObject.params
+                updateInterestsObject.query, updateInterestsObject.params 
             );
             if (interestResult.rowCount === 0) {
                 this.databaseService.rollbackTransaction();
@@ -89,13 +92,15 @@ export class UsersService {
                 throw new HttpException('Failed to update interests', HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
-        if (body.pictures) {
+        if (Array.isArray(body.pictures) && body.pictures.length > 0) {
             // Update users_pictures table
-            const pictureColumns = Object.keys(body.pictures);
-            const pictureValues = Object.values(body.pictures);
+            const pictureColumns = Object.keys(body.pictures[0]);
+            const pictureValues = Object.values(body.pictures[0]);
+            console.log('pictureColumns', pictureColumns);
             const updatePicturesObject = this.databaseService.updateQuery(
-                'user_pictures', pictureColumns, pictureValues, [userId]
+                'users_pictures', pictureColumns, pictureValues, [{ id: userId }]
             );
+            console.log('updatePicturesObject', updatePicturesObject);
             const pictureResult = await this.databaseService.execute(
                 updatePicturesObject.query, updatePicturesObject.params
             );

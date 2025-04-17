@@ -140,15 +140,19 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         if (validPreferences && !validPreferences.includes(value)) {
             errors.push(`Property '${key}' must be one of the following: ${validPreferences.join(', ')}.`);
         }
+        console.log(value);
 
         const validInterests = Reflect.getMetadata('validInterests', dto, key);
         const interestsAreBooleans = Reflect.getMetadata('interestsAreBooleans', dto, key);
         if (validInterests && interestsAreBooleans) {
-            const missingKeys = validInterests.filter((k: string) => !(k in value));
-            const invalidValues = validInterests.filter((k: string) => typeof value[k] !== 'boolean');
-
-            if (missingKeys.length > 0 || invalidValues.length > 0) {
-                errors.push(`Property '${key}' must be an object with keys ${validInterests.join(', ')}, all with boolean values.`);
+            const invalidValues = value.filter(
+                (k: string) => !(typeof value[k] !== 'boolean' || !validInterests.includes(k))
+            );
+            console.log(invalidValues);
+            if (invalidValues.length > 0) {
+                errors.push(
+                    `Property '${key}' must be an object with keys ${validInterests.join(', ')}, all with boolean values.`
+                );
             }
         }
 
@@ -156,11 +160,14 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const isImage = Reflect.getMetadata('isImage', dto, key);
 
         if (validPictures && isImage) {
-            const missingKeys = validPictures.filter((k: string) => !(k in value));
-            const invalidValues = validPictures.filter((k: string) => typeof value[k] !== 'string');
-
-            if (missingKeys.length > 0 || invalidValues.length > 0) {
-                errors.push(`Property '${key}' must be an object with keys ${validPictures.join(', ')}, all with string values.`);
+            const invalidValues = value.filter(
+                (k: string) => !(typeof value[k] !== 'string' || !validPictures.includes(k))
+            );
+            console.log(invalidValues);
+            if (invalidValues.length > 0) {
+                errors.push(
+                    `Property '${key}' must be an object with keys ${validPictures.join(', ')}, all with string values.`
+                );
             }
         }
     }

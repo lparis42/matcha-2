@@ -32,7 +32,8 @@ export class AuthService {
     const { username, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['id', 'username', 'password', 'is_verified'], [username]);
+      ['id', 'username', 'password', 'is_verified'], [{ 'username': username }]);
+    console.log(selectObject.query, selectObject.params);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid username or password for '${username}'!`);
@@ -71,7 +72,7 @@ export class AuthService {
     const { email, username, first_name, last_name, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['email', 'username'], [email, username]);
+      ['email', 'username'], [{ 'email': email }, { 'username': username }]);
     const selectResult = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);
@@ -108,7 +109,7 @@ export class AuthService {
   */
   async verifyEmail(body: UUIDDto): Promise<{ message: string }> {
     const { uuid } = body;
-    const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], [uuid]);
+    const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], [{ 'uuid': uuid }]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
@@ -144,7 +145,7 @@ export class AuthService {
   async forgotPassword(body: EmailDto): Promise<{ message: string }> {
     const { email } = body;
 
-    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [email]);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [{ 'email': email }]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid email '${email}'!`);
@@ -152,13 +153,13 @@ export class AuthService {
     }
 
     const uuid = uuidv4();
-    const updateObject = this.databaseService.updateQuery('users', ['uuid'], [uuid], [email]);
+    const updateObject = this.databaseService.updateQuery('users', ['uuid'], [uuid], [{ 'email': email }]);
     await this.databaseService.execute(updateObject.query, updateObject.params);
 
     await this.mailService.sendResetPasswordEmail(email, uuid);
 
-    this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
-    return { message: 'Password updated successfully!' };
+    this.logger.log(`Password reset email sent to '${email}' successfully!`);
+    return { message: 'Password reset email sent successfully!' };
   }
 
   /**
@@ -175,7 +176,7 @@ export class AuthService {
     const { password } = body;
     const { uuid } = query;
 
-    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [uuid]);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [{ 'uuid': uuid }]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
@@ -183,13 +184,13 @@ export class AuthService {
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
-    const updateObject = this.databaseService.updateQuery('users', ['password'], [hashPassword], [uuid]);
+    const updateObject = this.databaseService.updateQuery('users', ['password'], [hashPassword], [{ 'uuid': uuid }]);
     const updateResult = await this.databaseService.execute(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       this.logger.error(`Failed to update password for userId '${result.rows[0].id}'!`);
       throw new HttpException('Failed to update password!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], [null], [uuid]);
+    const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], [null], [{ 'uuid': uuid }]);
     await this.databaseService.execute(invalidateUUID.query, invalidateUUID.params);
 
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
@@ -207,7 +208,8 @@ export class AuthService {
   async fortyTwoConnect(user: AuthDataInterface): Promise<{ userId: number, message: string }> {
     const { fortytwo_id, email, username, first_name, last_name, picture } = user;
 
-    const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], [fortytwo_id]);
+    const selectfortyTwoId = this.databaseService.selectQuery('users', 
+      ['id', 'fortytwo_id'], [{ 'fortytwo_id': fortytwo_id }]);
     const fortyTwoIdResult = await this.databaseService.execute(selectfortyTwoId.query, selectfortyTwoId.params);
     if (fortyTwoIdResult.rowCount !== 0) {
       const userId = fortyTwoIdResult.rows[0].id;
@@ -215,10 +217,12 @@ export class AuthService {
       return { userId: userId, message: 'User signed in successfully!' };
     }
 
-    const selectEmail = this.databaseService.selectQuery('users', ['email', 'username'], [email, username]);
+    const selectEmail = this.databaseService.selectQuery('users', 
+      ['email', 'username'], [{ 'email': email }, { 'username': username }]);
     const emailResult = await this.databaseService.execute(selectEmail.query, selectEmail.params);
     if (emailResult.rowCount !== 0) {
-      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], [fortytwo_id], [email]);
+      const updateFortyTwoId = this.databaseService.updateQuery('users', 
+        ['fortytwo_id'], [fortytwo_id], [{ 'email': email }]);
       const updateFortyTwoIdResult = await this.databaseService.execute(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
         this.logger.error(`Failed to update fortytwo_id for email '${email}'!`);
@@ -229,7 +233,7 @@ export class AuthService {
       return { userId: userId, message: 'User signed in successfully!' };
     }
 
-    const selectUsername = this.databaseService.selectQuery('users', ['username'], [username]);
+    const selectUsername = this.databaseService.selectQuery('users', ['username'], [{ 'username': username }]);
     const usernameResult = await this.databaseService.execute(selectUsername.query, selectUsername.params);
     if (usernameResult.rowCount !== 0) {
       this.logger.error(`Username '${username}' already exists!`);
@@ -243,18 +247,14 @@ export class AuthService {
       [email, username, first_name, last_name, fortytwo_id]
     );
     const insertResult = await this.databaseService.execute(insertObject.query + ' RETURNING id', insertObject.params);
-    const userId = insertResult.rows[0].id;
-    const insertPicture = this.databaseService.updateQuery(
-      'users_pictures', ['picture_1'], [picture], [userId]
-    );
-    const insertPictureResult = await this.databaseService.execute(insertPicture.query, insertPicture.params);
-    if (!insertResult.rowCount || !insertPictureResult.rowCount) {
+    if (!insertResult.rowCount) {
       await this.databaseService.execute('ROLLBACK');
       this.logger.error(`Failed to sign up user '${email}'!`);
       throw new HttpException('Failed to sign up user!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     await this.databaseService.execute('COMMIT');
 
+    const userId = insertResult.rows[0].id;
     this.logger.log(`User '${userId}' signed up successfully!`);
     return { userId, message: 'User signed up successfully!' };
   }
@@ -277,7 +277,7 @@ export class AuthService {
     const { email, username, first_name, last_name, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['email', 'username'], [email, username]);
+      ['email', 'username'], [{ 'email': email }, { 'username': username }]);
     const selectResult = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);

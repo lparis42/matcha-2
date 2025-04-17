@@ -71,16 +71,18 @@ export class DatabaseService implements OnModuleInit {
         return this.pool.query('ROLLBACK');
     }
 
-    selectQuery(table: string, columnNames: string[], whereParams: any[]): { query: string, params: any[] } {
-        const whereClause = whereParams.map((_, index) => `${columnNames[index]} = $${index + 1}`).join(' AND ');
+    selectQuery(table: string, columnNames: string[], whereParams: Record<string, any>[]): { query: string, params: any[] } {
+        const whereClause = whereParams.map((param, index) => {
+            const key = Object.keys(param)[0];
+            return `"${key.replace(/"/g, '""')}" = $${index + 1}`;
+        }).join(' AND ');
         const safeTableName = `"${table.replace(/"/g, '""')}"`;
         const safeColumnNames = columnNames.length === 0 ? ['*'] : columnNames.map(col => `"${col.replace(/"/g, '""')}"`);
-        if (whereClause.length === 0) {
-            const query = `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName}`;
-            return { query, params: whereParams };
-        }
-        const query = `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName} WHERE ${whereClause}`;
-        return { query, params: whereParams };
+        const query = whereClause.length === 0
+            ? `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName}`
+            : `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName} WHERE ${whereClause}`;
+        const params = whereParams.map(param => Object.values(param)[0]);
+        return { query, params };
     }
 
     insertQuery(table: string, columnNames: string[], insertValues: any[]): { query: string, params: any[] } {
@@ -91,19 +93,30 @@ export class DatabaseService implements OnModuleInit {
         return { query, params: insertValues };
     }
 
-    updateQuery(table: string, columnNames: string[], insertValues: any[], whereParams: any[]): { query: string, params: any[] } {
-        const setClause = columnNames.map((col, index) => `${col} = $${index + 1}`).join(', ');
-        const whereClause = whereParams.map((_, index) => `${columnNames[index]} = $${index + columnNames.length + 1}`).join(' AND ');
+    updateQuery(table: string, columnNames: string[], insertValues: any[], whereParams: Record<string, any>[]): { query: string, params: any[] } {
+        console.log('columnNames', columnNames);
+        console.log('insertValues', insertValues);
+        console.log('whereParams', whereParams);
+        const setClause = columnNames.map((col, index) => `"${col.replace(/"/g, '""')}" = $${index + 1}`).join(', ');
+        const whereClause = whereParams.map((param, index) => {
+            const key = Object.keys(param)[0]; 
+            return `"${key.replace(/"/g, '""')}" = $${index + columnNames.length + 1}`;
+        }).join(' AND ');
         const safeTableName = `"${table.replace(/"/g, '""')}"`;
         const query = `UPDATE ${safeTableName} SET ${setClause} WHERE ${whereClause}`;
-        return { query, params: [...insertValues, ...whereParams] };
+        const params = [...insertValues, ...whereParams.map(param => Object.values(param)[0])];
+        return { query, params };
     }
 
-    deleteQuery(table: string, whereParams: any[]): { query: string, params: any[] } {
-        const whereClause = whereParams.map((_, index) => `$${index + 1}`).join(' AND ');
+    deleteQuery(table: string, whereParams: Record<string, any>[]): { query: string, params: any[] } {
+        const whereClause = whereParams.map((param, index) => {
+            const key = Object.keys(param)[0];
+            return `"${key.replace(/"/g, '""')}" = $${index + 1}`;
+        }).join(' AND ');
         const safeTableName = `"${table.replace(/"/g, '""')}"`;
         const query = `DELETE FROM ${safeTableName} WHERE ${whereClause}`;
-        return { query, params: whereParams };
+        const params = whereParams.map(param => Object.values(param)[0]);
+        return { query, params };
     }
 
 }

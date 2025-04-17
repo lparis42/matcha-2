@@ -17,7 +17,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE users_interests (
-    user_id INT REFERENCES users (id) ON DELETE CASCADE,
+    id INT REFERENCES users (id) ON DELETE CASCADE,
     technology BOOLEAN DEFAULT false,
     sports BOOLEAN DEFAULT false,
     music BOOLEAN DEFAULT false,
@@ -32,7 +32,7 @@ CREATE TABLE users_interests (
 );
 
 CREATE TABLE users_pictures (
-    user_id INT REFERENCES users (id) ON DELETE CASCADE,
+    id INT REFERENCES users (id) ON DELETE CASCADE,
     picture_1 VARCHAR(255),
     picture_2 VARCHAR(255),
     picture_3 VARCHAR(255),
@@ -45,8 +45,8 @@ CREATE TABLE users_pictures (
 CREATE OR REPLACE FUNCTION create_user_related_entries()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO users_interests (user_id) VALUES (NEW.id);
-    INSERT INTO users_pictures (user_id) VALUES (NEW.id);
+    INSERT INTO users_interests (id) VALUES (NEW.id);
+    INSERT INTO users_pictures (id) VALUES (NEW.id);
 
     RETURN NEW;
 END;

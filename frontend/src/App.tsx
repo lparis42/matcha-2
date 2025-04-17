@@ -53,9 +53,9 @@ function App() {
     }
   }
 
-  const AskResetEmail = async () => {
+  const ForgotPassword = async () => {
     try {
-      const response = await fetch('/api/auth/ask-reset-email', {
+      const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,6 +79,37 @@ function App() {
   }
 
   const hasFetched = useRef(false);
+
+  const UpdateProfile = async () => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'usertest',
+          password: 'passtestE42',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'lparismemartin@gmail.com',
+          date_of_birth: '1990-01-01',
+          gender: 'Male',
+          sexual_preferences: 'Heterosexual',
+          biography: 'Hello world!',
+          interests: [{'technology': true, 'sports': false}],
+          pictures: [{'picture_1': 'picture1.jpg'}, {'picture_2': 'picture2.jpg'}]
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+      console.log(data)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   useEffect(() => {
 
@@ -133,11 +164,14 @@ function App() {
         <button onClick={SignUp}>
           Sign Up
         </button>
-        <button onClick={AskResetEmail}>
-          Ask Reset Email
+        <button onClick={ForgotPassword}>
+          Forgot password
         </button>
         <button onClick={Oauth42}>
           Oauth 42
+        </button>
+        <button onClick={UpdateProfile}>
+          Update Profile
         </button>
       </div>
     </>
