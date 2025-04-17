@@ -55,8 +55,6 @@ export class UsersService {
     * @throws HttpException if the update operation fails.
     **/
     async updateUser(body: UserProfileDto, userId: number): Promise<{ message: string }> {
-        console.log('body', body);
-        console.log('userId', userId);
         this.databaseService.beginTransaction();
         // Update users table
         const columnNames = Object.keys(body).filter((key, _) =>
@@ -82,7 +80,6 @@ export class UsersService {
             const updateInterestsObject = this.databaseService.updateQuery(
                 'users_interests', interestColumns, interestValues, [{ id: userId }]
             );
-            console.log('updateInterestsObject', updateInterestsObject);
             const interestResult = await this.databaseService.execute(
                 updateInterestsObject.query, updateInterestsObject.params 
             );
@@ -96,15 +93,13 @@ export class UsersService {
             // Update users_pictures table
             const pictureColumns = Object.keys(body.pictures[0]);
             const pictureValues = Object.values(body.pictures[0]);
-            console.log('pictureColumns', pictureColumns);
             const updatePicturesObject = this.databaseService.updateQuery(
                 'users_pictures', pictureColumns, pictureValues, [{ id: userId }]
             );
-            console.log('updatePicturesObject', updatePicturesObject);
             const pictureResult = await this.databaseService.execute(
                 updatePicturesObject.query, updatePicturesObject.params
             );
-            if (pictureResult.rowCount === 0) {
+            if (pictureResult.rowCount === 0) { 
                 this.databaseService.rollbackTransaction();
                 this.logger.error(`Failed to update pictures for user with ID ${userId}`, UsersService.name);
                 throw new HttpException('Failed to update pictures', HttpStatus.INTERNAL_SERVER_ERROR);

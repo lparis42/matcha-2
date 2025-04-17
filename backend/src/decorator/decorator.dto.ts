@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { GENDERS, INTEREST_KEYS, PICTURES_KEYS, SEXUAL_PREFERENCES } from '../users/interfaces/interface.users.js';
+import { Logger } from '@nestjs/common/index.js';
 
 export function verifyEmail(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
@@ -70,14 +71,12 @@ export function verifySexualPreferences(): PropertyDecorator {
 export function verifyInterests(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
         Reflect.defineMetadata('validInterests', INTEREST_KEYS, target, propertyKey);
-        Reflect.defineMetadata('interestsAreBooleans', true, target, propertyKey);
     };
 }
 
 export function verifyPictures(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
         Reflect.defineMetadata('validPictures', PICTURES_KEYS, target, propertyKey);
-        Reflect.defineMetadata('isImage', 'string', target, propertyKey);
     };
 }
 
@@ -140,16 +139,16 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         if (validPreferences && !validPreferences.includes(value)) {
             errors.push(`Property '${key}' must be one of the following: ${validPreferences.join(', ')}.`);
         }
-        console.log(value);
 
         const validInterests = Reflect.getMetadata('validInterests', dto, key);
-        const interestsAreBooleans = Reflect.getMetadata('interestsAreBooleans', dto, key);
-        if (validInterests && interestsAreBooleans) {
-            const invalidValues = value.filter(
-                (k: string) => !(typeof value[k] !== 'boolean' || !validInterests.includes(k))
+        if (validInterests) {
+            const invalidValues = value.flatMap((item: Record<string, any>) =>
+                Object.keys(item).filter(
+                    (interest) => !validInterests.includes(interest) || typeof item[interest] !== 'boolean'
+                )
             );
-            console.log(invalidValues);
             if (invalidValues.length > 0) {
+                Logger.error(`Invalid interests: ${invalidValues.join(', ')}`, validateDto.name);
                 errors.push(
                     `Property '${key}' must be an object with keys ${validInterests.join(', ')}, all with boolean values.`
                 );
@@ -157,14 +156,14 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         }
 
         const validPictures = Reflect.getMetadata('validPictures', dto, key);
-        const isImage = Reflect.getMetadata('isImage', dto, key);
-
-        if (validPictures && isImage) {
-            const invalidValues = value.filter(
-                (k: string) => !(typeof value[k] !== 'string' || !validPictures.includes(k))
+        if (validPictures) {
+            const invalidValues = value.flatMap((item: Record<string, any>) =>
+                Object.keys(item).filter(
+                    (picture) => !validPictures.includes(picture) || typeof item[picture] !== 'string'
+                )
             );
-            console.log(invalidValues);
             if (invalidValues.length > 0) {
+                Logger.error(`Invalid pictures: ${invalidValues.join(', ')}`, validateDto.name);
                 errors.push(
                     `Property '${key}' must be an object with keys ${validPictures.join(', ')}, all with string values.`
                 );

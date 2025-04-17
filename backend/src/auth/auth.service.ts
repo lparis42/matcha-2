@@ -33,7 +33,6 @@ export class AuthService {
 
     const selectObject = this.databaseService.selectQuery('users',
       ['id', 'username', 'password', 'is_verified'], [{ 'username': username }]);
-    console.log(selectObject.query, selectObject.params);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid username or password for '${username}'!`);

@@ -40,21 +40,16 @@ export class DatabaseService implements OnModuleInit {
             ['user@example.com', 'username1', 'John', 'Doe', 'password123', '1990-01-01', 'male', 'heterosexual', 'Hello world!']
         );
         // Log the query and params for debugging
-        console.log('Executing query:', insertQuery.query);
-        console.log('With params:', insertQuery.params);
         await this.execute(insertQuery.query, insertQuery.params);
 
         const select = this.selectQuery('users', [], []);
         // Log the query and params for debugging
-        console.log('Executing query:', select.query);
-        console.log('With params:', select.params);
         const result = await this.execute(select.query, select.params);
         if (result.rowCount === 0) {
             Logger.error('No users found in the database.', 'DatabaseInitService');
             return;
         }
         Logger.log(`Found ${result.rowCount} users in the database.`, 'DatabaseInitService');
-        console.log('Users:', result.rows); // Log the users to the console for testing
     }
 
     execute(query: string, params: any[] = []): Promise<any> {
@@ -94,9 +89,6 @@ export class DatabaseService implements OnModuleInit {
     }
 
     updateQuery(table: string, columnNames: string[], insertValues: any[], whereParams: Record<string, any>[]): { query: string, params: any[] } {
-        console.log('columnNames', columnNames);
-        console.log('insertValues', insertValues);
-        console.log('whereParams', whereParams);
         const setClause = columnNames.map((col, index) => `"${col.replace(/"/g, '""')}" = $${index + 1}`).join(', ');
         const whereClause = whereParams.map((param, index) => {
             const key = Object.keys(param)[0]; 
