@@ -12,17 +12,21 @@ export class UsersService {
         private readonly databaseService: DatabaseService,
     ) { }
 
+    /**
+     * Retrieves a user by their ID.
+     * @param body - The request body containing the user ID.
+     * @returns The user information.
+     * @throws HttpException if the user is not found.
+     */
     async getUserById(body: UserByIdDto): Promise<{ user: UserInfo }> {
         const { id } = body;
 
-        this.logger.debug(`Fetching user with ID: ${id}`);
         const selectObject = this.databaseService.selectQuery(
             'users',
             [],
             `id = $1`,
             [id]
         );
-        this.logger.debug(`Executing query: ${selectObject.query} with params: ${JSON.stringify(selectObject.params)}`);
         const result = await this.databaseService.execute(selectObject.query, selectObject.params);
         if (result.rowCount === 0) {
             this.logger.error(`User with ID ${id} not found`);
