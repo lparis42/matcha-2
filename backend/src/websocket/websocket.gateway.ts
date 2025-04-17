@@ -1,11 +1,10 @@
 import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
-import { Inject, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Server, Socket } from 'socket.io';
 import * as cookie from 'cookie';
 import * as signature from 'cookie-signature';
 import { DatabaseService } from '../db/db.service.js';
-import { Pool } from 'pg';
 
 @WebSocketGateway({
     cors: {
@@ -65,7 +64,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
             }
             // Check if the user ID exists in the database
             // If the user ID does not exist, return an error
-            const select = this.databaseService.selectQuery('users', ['id'], `id = $1`, [userId]);
+            const select = this.databaseService.selectQuery('users', ['id'], [userId]);
             const result = await this.databaseService.execute(select.query, select.params);
             if (result.rowCount === 0) {
                 this.logger.error('User not found');

@@ -1,8 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common/index.js";
-import { UserInfo } from "./interfaces/interface.user-info.js";
-import { UserByIdDto } from "./dto/dto.user-by-id.js";
+import { UsersInterface } from "./interfaces/interface.users.js";
 import { DatabaseService } from "../db/db.service.js";
-import { mapDBUserToUserInfo } from "./mapper/mapper.db-user-to-user-info.js";
+import { UsersInterfaceMapper } from "./mapper/mapper.users-interface.js";
+import { IdDto } from "./dto/dto.id.js";
 
 @Injectable()
 export class UsersService {
@@ -18,29 +18,26 @@ export class UsersService {
      * @returns The user information.
      * @throws HttpException if the user is not found.
      */
-    async getUserById(body: UserByIdDto): Promise<{ user: UserInfo }> {
-        const { id } = body;
-
-        const selectObject = this.databaseService.selectQuery(
-            'users',
-            [],
-            `id = $1`,
-            [id]
-        );
+    async getUserById(params: IdDto): Promise<{ user: UsersInterface, message: string }> {
+        const { id } = params;
+        const selectObject = this.databaseService.selectQuery('users', [], [id]);
         const result = await this.databaseService.execute(selectObject.query, selectObject.params);
         if (result.rowCount === 0) {
-            this.logger.error(`User with ID ${id} not found`);
+            this.logger.error(`User with ID ${id} not found`, UsersService.name);
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
-        const user = mapDBUserToUserInfo(result.rows[0]);
-        return { user };
+        const user = UsersInterfaceMapper(result.rows[0]);
+        return { user, message: 'User found' };
     }
 
-    async getAllUsers(): Promise<{ id: number, name: string }[]> {
-        // Simulate a database call
-        return [
-            { id: 1, name: "John Doe" },
-            { id: 2, name: "Jane Doe" },
-        ];
+    /**
+     * Retrieves all users.
+     * @returns An array of users.
+     */
+    async getAllUsers(): Promise<{ users: UsersInterface[], message: string }> {
+        const selectObject = this.databaseService.selectQuery('users', [], []);
+        const result = await this.databaseService.execute(selectObject.query, selectObject.params);
+        const users = result.rows.map((user: any) => UsersInterfaceMapper(user));
+        return { users, message: 'Users found' };
     }
 }

@@ -33,48 +33,67 @@ export class DatabaseService implements OnModuleInit {
         await this.pool.query(createUsersTableQuery);
         Logger.log('Table "users" created successfully!', 'DatabaseInitService');
 
-        // For testing purposes, we can create a test user with default values.
+        // For testing purposes, we can create a test user with default insertValues.
         const insertQuery = this.insertQuery(
             'users',
-            ['email', 'username', 'first_name', 'last_name', 'password', 'gender', 'sexual_preferences', 'biography'],
-            ['user@example.com', 'username1', 'John', 'Doe', 'password123', 'male', 'female', 'Hello world!']
+            ['email', 'username', 'first_name', 'last_name', 'password', 'date_of_birth', 'gender', 'sexual_preferences', 'biography'],
+            ['user@example.com', 'username1', 'John', 'Doe', 'password123', '1990-01-01', 'male', 'heterosexual', 'Hello world!']
         );
+        // Log the query and params for debugging
+        console.log('Executing query:', insertQuery.query);
+        console.log('With params:', insertQuery.params);
         await this.execute(insertQuery.query, insertQuery.params);
+
+        const select = this.selectQuery('users', [], []);
+        // Log the query and params for debugging
+        console.log('Executing query:', select.query);
+        console.log('With params:', select.params);
+        const result = await this.execute(select.query, select.params);
+        if (result.rowCount === 0) {
+            Logger.error('No users found in the database.', 'DatabaseInitService');
+            return;
+        }
+        Logger.log(`Found ${result.rowCount} users in the database.`, 'DatabaseInitService');
+        console.log('Users:', result.rows); // Log the users to the console for testing
     }
 
     execute(query: string, params: any[] = []): Promise<any> {
-        try {
-            return this.pool.query(query, params);
+        return this.pool.query(query, params);
+    }
+
+    selectQuery(table: string, columnNames: string[], whereParams: any[]): { query: string, params: any[] } {
+        const whereClause = whereParams.map((_, index) => `${columnNames[index]} = $${index + 1}`).join(' AND ');
+        const safeTableName = `"${table.replace(/"/g, '""')}"`;
+        const safeColumnNames = columnNames.length === 0 ? ['*'] : columnNames.map(col => `"${col.replace(/"/g, '""')}"`);
+        if (whereClause.length === 0) {
+            const query = `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName}`;
+            return { query, params: whereParams };
         }
-        catch (error) {
-            Logger.error(`Error executing query: ${query}`, error, 'DatabaseService');
-            throw error;
-        }
+        const query = `SELECT ${safeColumnNames.join(', ')} FROM ${safeTableName} WHERE ${whereClause}`;
+        return { query, params: whereParams };
     }
 
-    selectQuery(table: string, columns: string[], whereClause: string, whereValues: any[]): { query: string, params: any[] } {
-        const query = `SELECT ${ columns.length ? columns.join(', ') : '*'} FROM ${table} WHERE ${whereClause}`;
-        return { query, params: whereValues };
+    insertQuery(table: string, columnNames: string[], insertValues: any[]): { query: string, params: any[] } {
+        const whereClause = insertValues.map((_, index) => `$${index + 1}`).join(', ');
+        const safeTableName = `"${table.replace(/"/g, '""')}"`;
+        const safeColumnNames = columnNames.map(col => `"${col.replace(/"/g, '""')}"`);
+        const query = `INSERT INTO ${safeTableName} (${safeColumnNames.join(', ')}) VALUES (${whereClause})`;
+        return { query, params: insertValues };
     }
 
-    insertQuery(table: string, columns: string[], values: any[]): { query: string; params: any[] } {
-        const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
-        const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
-        return { query, params: values };
+    updateQuery(table: string, columnNames: string[], insertValues: any[], whereParams: any[]): { query: string, params: any[] } {
+        const setClause = columnNames.map((col, index) => `${col} = $${index + 1}`).join(', ');
+        const whereClause = whereParams.map((_, index) => `${columnNames[index]} = $${index + columnNames.length + 1}`).join(' AND ');
+        const safeTableName = `"${table.replace(/"/g, '""')}"`;
+        const query = `UPDATE ${safeTableName} SET ${setClause} WHERE ${whereClause}`;
+        return { query, params: [...insertValues, ...whereParams] };
     }
 
-    updateQuery(table: string, set: string[], whereClause: string, values: any[], whereValues: any[]): { query: string; params: any[] } {
-        const setClause = set.map((column, index) => `${column} = $${index + 1}`).join(', ');
-
-        const offset = values.length;
-        const whereClauseWithPlaceholders = whereClause.replace(/\$(\d+)/g, (_, n) => `$${Number(n) + offset}`);
-
-        const query = `UPDATE ${table} SET ${setClause} WHERE ${whereClauseWithPlaceholders}`;
-        return { query, params: [...values, ...whereValues] };
+    deleteQuery(table: string, whereParams: any[]): { query: string, params: any[] } {
+        const whereClause = whereParams.map((_, index) => `$${index + 1}`).join(' AND ');
+        const safeTableName = `"${table.replace(/"/g, '""')}"`;
+        const query = `DELETE FROM ${safeTableName} WHERE ${whereClause}`;
+        return { query, params: whereParams };
     }
 
-    deleteQuery(table: string, whereClause: string, whereValues: any[]): { query: string; params: any[] } {
-        const query = `DELETE FROM ${table} WHERE ${whereClause}`;
-        return { query, params: whereValues };
-    }
 }

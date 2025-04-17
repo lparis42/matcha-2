@@ -24,7 +24,7 @@ export class CookieAuthGuard implements CanActivate {
         }
         // Check if the user exists in the database
         // If the user does not exist, throw an unauthorized exception
-        const select = this.databaseService.selectQuery('users', ['id'], `id = $1`, [userId]);
+        const select = this.databaseService.selectQuery('users', ['id'], [userId]);
         const result = await this.databaseService.execute(select.query, select.params);
         if (result.rowCount === 0) {
             throw new HttpException('User not found!', HttpStatus.UNAUTHORIZED);

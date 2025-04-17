@@ -1,9 +1,9 @@
-import { UserData } from '../interfaces/interface.userdata.ts';
+import { AuthDataInterface } from '../auth/interfaces/interface.auth-data.ts';
 
 declare global {
     namespace Express {
         interface Request {
-            user?: UserData;
+            user?: AuthDataInterface;
         }
     }
 }

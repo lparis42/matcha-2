@@ -21,10 +21,10 @@ export function verifyPassword(): PropertyDecorator {
     };
 }
 
-export function verifyId(): PropertyDecorator {
+export function verifyInteger(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
-        const idRegex = /^[0-9]+$/;
-        Reflect.defineMetadata('idRegex', idRegex, target, propertyKey);
+        const integerRegex = /^-?\d+$/;
+        Reflect.defineMetadata('integerRegex', integerRegex, target, propertyKey);
     }
 }
 
@@ -64,6 +64,11 @@ export function validateDto(dto: any): { valid: boolean; errors: string[] } {
         const passwordRegex = Reflect.getMetadata('passwordRegex', dto, key);
         if (passwordRegex && (typeof value !== 'string' || !passwordRegex.test(value))) {
             errors.push(`Property '${key}' must include at least one uppercase letter, one lowercase letter, and one number.`);
+        }
+
+        const integerRegex = Reflect.getMetadata('integerRegex', dto, key);
+        if (integerRegex && (typeof value !== 'string' || !integerRegex.test(value))) {
+            errors.push(`Property '${key}' must be a valid integer.`);
         }
 
         const nameRegex = Reflect.getMetadata('nameRegex', dto, key);

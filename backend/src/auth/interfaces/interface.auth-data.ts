@@ -1,4 +1,4 @@
-export interface UserData {
+export interface AuthDataInterface {
     id?: number;
     fortytwo_id?: number;
     username?: string;

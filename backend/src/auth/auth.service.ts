@@ -3,10 +3,10 @@ import * as bcrypt from 'bcrypt';
 import { DatabaseService } from '../db/db.service.js';
 import { SignInDto } from './dto/dto.signin.js';
 import { SignUpDto } from './dto/dto.signup.js';
-import { UserData } from '../interfaces/interface.userdata.js';
+import { AuthDataInterface } from './interfaces/interface.auth-data.js';
 import { MailService } from '../email/mail.service.js';
 import { v4 as uuidv4 } from 'uuid';
-import { UUIDDto } from './dto/dto.UUID.js';
+import { UUIDDto } from './dto/dto.uuid.js';
 import { PasswordDto } from './dto/dto.password.js';
 import { EmailDto } from './dto/dto.email.js';
 
@@ -32,7 +32,7 @@ export class AuthService {
     const { username, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['id', 'username', 'password', 'is_verified'], `username = $1`, [username]);
+      ['id', 'username', 'password', 'is_verified'], [username]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid username or password for '${username}'!`);
@@ -71,7 +71,7 @@ export class AuthService {
     const { email, username, first_name, last_name, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['email', 'username'], `email = $1 OR username = $2`, [email, username]);
+      ['email', 'username'], [email, username]);
     const selectResult = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);
@@ -108,7 +108,7 @@ export class AuthService {
   */
   async verifyEmail(body: UUIDDto): Promise<{ message: string }> {
     const { uuid } = body;
-    const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], `uuid = $1`, [uuid]);
+    const selectObject = this.databaseService.selectQuery('users', ['id', 'uuid'], [uuid]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
@@ -121,7 +121,7 @@ export class AuthService {
       throw new HttpException('Invalid email or uuid!', HttpStatus.BAD_REQUEST);
     }
 
-    const updateObject = this.databaseService.updateQuery('users', ['is_verified'], `id=$1`, [true], [userId]);
+    const updateObject = this.databaseService.updateQuery('users', ['is_verified'], [true], [userId]);
     const updateResult = await this.databaseService.execute(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       this.logger.error(`Failed to update to verify for user '${userId}'!`);
@@ -144,7 +144,7 @@ export class AuthService {
   async forgotPassword(body: EmailDto): Promise<{ message: string }> {
     const { email } = body;
 
-    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `email = $1`, [email]);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [email]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid email '${email}'!`);
@@ -152,7 +152,7 @@ export class AuthService {
     }
 
     const uuid = uuidv4();
-    const updateObject = this.databaseService.updateQuery('users', ['uuid'], `email = $1`, [uuid], [email]);
+    const updateObject = this.databaseService.updateQuery('users', ['uuid'], [uuid], [email]);
     await this.databaseService.execute(updateObject.query, updateObject.params);
 
     await this.mailService.sendResetPasswordEmail(email, uuid);
@@ -175,7 +175,7 @@ export class AuthService {
     const { password } = body;
     const { uuid } = query;
 
-    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], `uuid = $1`, [uuid]);
+    const selectObject = this.databaseService.selectQuery('users', ['email', 'id'], [uuid]);
     const result = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (result.rowCount === 0) {
       this.logger.error(`Invalid UUID '${uuid}'!`);
@@ -183,13 +183,13 @@ export class AuthService {
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
-    const updateObject = this.databaseService.updateQuery('users', ['password'], `uuid = $1`, [hashPassword], [uuid]);
+    const updateObject = this.databaseService.updateQuery('users', ['password'], [hashPassword], [uuid]);
     const updateResult = await this.databaseService.execute(updateObject.query, updateObject.params);
     if (updateResult.rowCount === 0) {
       this.logger.error(`Failed to update password for userId '${result.rows[0].id}'!`);
       throw new HttpException('Failed to update password!', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], `uuid = $1`, [null], [uuid]);
+    const invalidateUUID = this.databaseService.updateQuery('users', ['uuid'], [null], [uuid]);
     await this.databaseService.execute(invalidateUUID.query, invalidateUUID.params);
 
     this.logger.log(`User '${result.rows[0].id}' password updated successfully!`);
@@ -204,10 +204,10 @@ export class AuthService {
    * @throws {HttpException} If the user already exists, the username already exists,
    * or if the database operation fails.
    */
-  async fortyTwoConnect(user: UserData): Promise<{ userId: number, message: string }> {
+  async fortyTwoConnect(user: AuthDataInterface): Promise<{ userId: number, message: string }> {
     const { fortytwo_id, email, username, first_name, last_name, picture } = user;
 
-    const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], `fortytwo_id = $1`, [fortytwo_id]);
+    const selectfortyTwoId = this.databaseService.selectQuery('users', ['id', 'fortytwo_id'], [fortytwo_id]);
     const fortyTwoIdResult = await this.databaseService.execute(selectfortyTwoId.query, selectfortyTwoId.params);
     if (fortyTwoIdResult.rowCount !== 0) {
       const userId = fortyTwoIdResult.rows[0].id;
@@ -215,10 +215,10 @@ export class AuthService {
       return { userId: userId, message: 'User signed in successfully!' };
     }
 
-    const selectEmail = this.databaseService.selectQuery('users', ['email', 'username'], `email = $1 AND username = $2`, [email, username]);
+    const selectEmail = this.databaseService.selectQuery('users', ['email', 'username'], [email, username]);
     const emailResult = await this.databaseService.execute(selectEmail.query, selectEmail.params);
     if (emailResult.rowCount !== 0) {
-      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], `email = $1`, [fortytwo_id], [email]);
+      const updateFortyTwoId = this.databaseService.updateQuery('users', ['fortytwo_id'], [fortytwo_id], [email]);
       const updateFortyTwoIdResult = await this.databaseService.execute(updateFortyTwoId.query, updateFortyTwoId.params);
       if (updateFortyTwoIdResult.rowCount === 0) {
         this.logger.error(`Failed to update fortytwo_id for email '${email}'!`);
@@ -229,7 +229,7 @@ export class AuthService {
       return { userId: userId, message: 'User signed in successfully!' };
     }
 
-    const selectUsername = this.databaseService.selectQuery('users', ['username'], `username = $1`, [username]);
+    const selectUsername = this.databaseService.selectQuery('users', ['username'], [username]);
     const usernameResult = await this.databaseService.execute(selectUsername.query, selectUsername.params);
     if (usernameResult.rowCount !== 0) {
       this.logger.error(`Username '${username}' already exists!`);
@@ -245,7 +245,7 @@ export class AuthService {
     const insertResult = await this.databaseService.execute(insertObject.query + ' RETURNING id', insertObject.params);
     const userId = insertResult.rows[0].id;
     const insertPicture = this.databaseService.updateQuery(
-      'users_pictures', ['picture_1'], `user_id = $1`, [picture], [userId]
+      'users_pictures', ['picture_1'], [picture], [userId]
     );
     const insertPictureResult = await this.databaseService.execute(insertPicture.query, insertPicture.params);
     if (!insertResult.rowCount || !insertPictureResult.rowCount) {
@@ -277,7 +277,7 @@ export class AuthService {
     const { email, username, first_name, last_name, password } = body;
 
     const selectObject = this.databaseService.selectQuery('users',
-      ['email', 'username'], `email = $1 OR username = $2`, [email, username]);
+      ['email', 'username'], [email, username]);
     const selectResult = await this.databaseService.execute(selectObject.query, selectObject.params);
     if (selectResult.rowCount !== 0) {
       this.logger.error(`User '${email}' or '${username}' already exists!`);

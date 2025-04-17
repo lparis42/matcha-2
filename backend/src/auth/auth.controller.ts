@@ -8,7 +8,7 @@ import { AuthGuard } from '@nestjs/passport/index.js';
 import { Request } from 'express';
 import { CookieInterceptor } from './interceptors/interceptor.cookie.js';
 import { CookieAuthGuard } from './guards/guard.cookie.js';
-import { UUIDDto } from './dto/dto.UUID.js';
+import { UUIDDto } from './dto/dto.uuid.js';
 import { EmailDto } from './dto/dto.email.js';
 import { PasswordDto } from './dto/dto.password.js';
 
