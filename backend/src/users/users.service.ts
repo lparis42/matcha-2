@@ -57,8 +57,11 @@ export class UsersService {
     async updateUser(body: UserProfileDto, userId: number): Promise<{ message: string }> {
         this.databaseService.beginTransaction();
         // Update users table
-        const columnNames = Object.keys(body).filter(key => !['interests', 'pictures'].includes(key));
-        const values = Object.values(body).filter(value => typeof value === 'string' && !['interests', 'pictures'].includes(value));
+        const columnNames = Object.keys(body).filter((key, _) =>
+            !!body[key as keyof UserProfileDto] &&
+            typeof body[key as keyof UserProfileDto] !== 'object'
+        );
+        const values = columnNames.map(key => body[key as keyof UserProfileDto]);
         if (body.password) {
             const hashedPassword = await bcrypt.hash(body.password, 10);
             values[columnNames.indexOf('password')] = hashedPassword;
