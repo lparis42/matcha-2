@@ -21,6 +21,13 @@ export function verifyPassword(): PropertyDecorator {
     };
 }
 
+export function verifyId(): PropertyDecorator {
+    return (target: Object, propertyKey: string | symbol) => {
+        const idRegex = /^[0-9]+$/;
+        Reflect.defineMetadata('idRegex', idRegex, target, propertyKey);
+    }
+}
+
 export function verifyName(): PropertyDecorator {
     return (target: Object, propertyKey: string | symbol) => {
         const nameRegex = /^[a-zA-Z]+$/;

@@ -1,7 +1,8 @@
-import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { DatabaseService } from '../../db/db.service.js';
 
+@Injectable()
 export class CookieAuthGuard implements CanActivate {
     constructor(
         private readonly databaseService: DatabaseService
@@ -23,6 +24,7 @@ export class CookieAuthGuard implements CanActivate {
         }
         // Check if the user exists in the database
         // If the user does not exist, throw an unauthorized exception
+        Logger.log(`Checking if user with ID ${userId} exists in the database...`);
         const select = this.databaseService.selectQuery('users', ['id'], `id = $1`, [userId]);
         const result = await this.databaseService.execute(select.query, select.params);
         if (result.rowCount === 0) {

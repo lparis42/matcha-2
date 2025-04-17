@@ -6,6 +6,7 @@ CREATE TABLE users (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     password VARCHAR(255),
+    age INT CHECK (age >= 18),
     gender VARCHAR(255),
     sexual_preferences VARCHAR(255),
     fame_rating INT DEFAULT 0,

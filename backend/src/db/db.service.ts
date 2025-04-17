@@ -43,11 +43,17 @@ export class DatabaseService implements OnModuleInit {
     }
 
     execute(query: string, params: any[] = []): Promise<any> {
-        return this.pool.query(query, params);
+        try {
+            return this.pool.query(query, params);
+        }
+        catch (error) {
+            Logger.error(`Error executing query: ${query}`, error, 'DatabaseService');
+            throw error;
+        }
     }
 
     selectQuery(table: string, columns: string[], whereClause: string, whereValues: any[]): { query: string, params: any[] } {
-        const query = `SELECT ${columns.join(', ')} FROM ${table} WHERE ${whereClause}`;
+        const query = `SELECT ${ columns.length ? columns.join(', ') : '*'} FROM ${table} WHERE ${whereClause}`;
         return { query, params: whereValues };
     }
 
